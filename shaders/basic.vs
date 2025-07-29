@@ -6,12 +6,14 @@ layout (location = 3) in vec3 aColors;
 
 out vec3 FragPos;
 out vec3 Color;
+out vec2 TexCoords;
 
 uniform mat4 model;
 
 void main()
 {
 	Color = aColors;
+	TexCoords = aTexCoords;
 	FragPos = aPos;
 	gl_Position = model * vec4(aPos, 1.0);
 }

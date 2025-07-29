@@ -14,8 +14,11 @@
 #include "shader.h"
 #include "vao.h"
 #include "vbo.h"
+#include "ebo.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+
+int toggle = 0;
 
 int main()
 {
@@ -67,6 +70,44 @@ int main()
     // Shader
     Shader shader("shaders/basic.vs", "shaders/basic.fs");
 
+    // TEMPORARY TEXTURE LOADING
+    
+    // Load image
+    int width, height, nrChannels;
+    int internalFormat = 0;
+    int imageFormat = 0;
+
+    unsigned char* data = stbi_load("textures/container2_diffuse.png", &width, &height, &nrChannels, 0);
+
+    if (nrChannels == 4)
+    {
+        internalFormat = GL_RGBA;
+        imageFormat = GL_RGBA;
+    }
+    else
+    {
+        internalFormat = GL_RGB;
+        imageFormat = GL_RGB;
+    }
+
+    unsigned int texID;
+    glGenTextures(1, &texID);
+
+    // Create Texture
+    glBindTexture(GL_TEXTURE_2D, texID);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, imageFormat, GL_UNSIGNED_BYTE, data);
+    // Set Texture wrap and filter modes
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // Unbind texture
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Free image data
+    stbi_image_free(data);
+
+    // TEMPORARY TEXTURE LOADING 
 
     float squareVert[] = {
         // Position          // Tex        // Colors   
@@ -78,13 +119,37 @@ int main()
         0.5f,  0.5f,  0.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f      // Top Right
     };
 
+    float testVert[] = {
+        // Position          // Tex        // Colors   
+       -0.4f, -0.4f,  0.0f,  0.0f,  0.0f,  0.0f,  0.0f,  1.0f,     // Bottom Left
+       -0.2f, -0.4f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,     // Bottom Right
+       -0.2f, -0.2f,  0.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f,     // Top Right
+       -0.4f, -0.2f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,  0.0f,     // Top Left
+
+        0.4f,  0.4f,  0.0f,  0.0f,  0.0f,  0.0f,  0.0f,  1.0f,     // Bottom Left
+        0.2f,  0.4f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,     // Bottom Right
+        0.2f,  0.2f,  0.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f,     // Top Right
+        0.4f,  0.2f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,  0.0f      // Top Left
+    };
+
+    unsigned int testInd[]{
+    0, 1, 2,
+    3, 0, 2,
+
+    4, 5, 6,
+    7, 4, 6
+    };
+
+
     Vao VAO;
     Vbo VBO;
+    Ebo EBO;
 
     VAO.bind();
     VBO.bind();
-    VBO.addData(&squareVert, sizeof(squareVert));
+    VBO.addData(&testVert, sizeof(testVert));
     VAO.setLayout(1, 0, 1, 1, 0);
+    EBO.addData(&testInd, sizeof(testInd));
 
     VAO.unbind();
 
@@ -101,9 +166,15 @@ int main()
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(glm::sin(glfwGetTime()), 0.0f, 0.0f));
         shader.setMat4("model", model);
-        shader.use();
+        shader.setInt("u_tex", 0);
+        shader.setInt("toggle", toggle);
+        glBindTexture(GL_TEXTURE_2D, texID);
         VAO.bind();
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(glm::cos(glfwGetTime()), 0.0f, 0.0f));
+        shader.setMat4("model", model);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(unsigned int)));
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -128,6 +199,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
+    {
+        if (toggle == 0)
+            toggle = 1;
+        else
+            toggle = 0;
+    }
 
     /*
         void keyCallback (GLFWwindow\* wind, int key, int scancode, int action, int mods) {

@@ -1,9 +1,9 @@
 #pragma once
 
-class Vbo {
+class Ebo {
 public:
-    Vbo();
-    ~Vbo();
+    Ebo();
+    ~Ebo();
 
     unsigned int m_id = 0;
 
