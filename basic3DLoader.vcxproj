@@ -136,6 +136,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="basic3DLoader.cpp" />
+    <ClCompile Include="shader.cpp" />
+    <ClCompile Include="src\glad.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="shader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\basic.fs" />
+    <None Include="shaders\basic.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
