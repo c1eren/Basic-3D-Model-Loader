@@ -4,6 +4,7 @@ class Mesh {
 public:
 	unsigned int m_meshId = 0;
 
+	unsigned int indexCount = 0;
 	unsigned int indicesStart = 0;
 	unsigned int indicesEnd = 0;
 	// model[meshes[i]].indicesStart or something similar

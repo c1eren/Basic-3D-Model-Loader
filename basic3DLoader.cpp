@@ -3,6 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <iostream>
+#include <vector>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -15,6 +16,7 @@
 #include "vao.h"
 #include "vbo.h"
 #include "ebo.h"
+#include "mesh.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
@@ -140,6 +142,20 @@ int main()
     7, 4, 6
     };
 
+    std::vector<Mesh> meshes;
+    Mesh quad1;
+    Mesh quad2;
+
+    quad1.m_meshId = 1;
+    quad2.m_meshId = 2;
+
+    quad1.indicesStart = 0;
+    quad1.indicesEnd = 5;
+    quad2.indicesStart = 6;
+    quad2.indicesEnd = 11;
+
+    meshes.push_back(quad1);
+    meshes.push_back(quad2);
 
     Vao VAO;
     Vbo VBO;
@@ -170,11 +186,10 @@ int main()
         shader.setInt("toggle", toggle);
         glBindTexture(GL_TEXTURE_2D, texID);
         VAO.bind();
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(glm::cos(glfwGetTime()), 0.0f, 0.0f));
-        shader.setMat4("model", model);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(6 * sizeof(unsigned int)));
+        for (auto it : meshes)
+        {
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)(it.indicesStart * sizeof(unsigned int)));
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
