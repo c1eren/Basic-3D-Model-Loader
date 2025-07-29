@@ -136,11 +136,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="basic3DLoader.cpp" />
+    <ClCompile Include="mesh.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="src\glad.c" />
+    <ClCompile Include="vao.cpp" />
+    <ClCompile Include="vbo.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="mesh.h" />
     <ClInclude Include="shader.h" />
+    <ClInclude Include="vao.h" />
+    <ClInclude Include="vbo.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.fs" />

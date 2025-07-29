@@ -12,6 +12,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "shader.h"
+#include "vao.h"
+#include "vbo.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
@@ -67,28 +69,24 @@ int main()
 
 
     float squareVert[] = {
-        // Position          // Colors            // Texture Coords
-       -0.5f, -0.5f,  0.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,    // Bottom Left
-        0.5f, -0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,    // Bottom Right
-        0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,    // Top Right
-       -0.5f,  0.5f,  0.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f,    // Top Left
-       -0.5f, -0.5f,  0.0f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,    // Bottom Left
-        0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f     // Top Right
+        // Position          // Tex        // Colors   
+       -0.5f, -0.5f,  0.0f,  0.0f,  0.0f,  0.0f,  0.0f,  1.0f,     // Bottom Left
+        0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,     // Bottom Right
+        0.5f,  0.5f,  0.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f,     // Top Right
+       -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,  0.0f,     // Top Left
+       -0.5f, -0.5f,  0.0f,  0.0f,  0.0f,  0.0f,  0.0f,  1.0f,     // Bottom Left
+        0.5f,  0.5f,  0.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f      // Top Right
     };
 
-    unsigned int VAO, VBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    Vao VAO;
+    Vbo VBO;
 
-    glBindVertexArray(VAO);
+    VAO.bind();
+    VBO.bind();
+    VBO.addData(&squareVert, sizeof(squareVert));
+    VAO.setLayout(1, 0, 1, 1, 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(squareVert), &squareVert[0], GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-
-    glBindVertexArray(0);
+    VAO.unbind();
 
 /*#####################################################################################################################################################*/
     // RENDER LOOP
@@ -104,7 +102,7 @@ int main()
         model = glm::translate(model, glm::vec3(glm::sin(glfwGetTime()), 0.0f, 0.0f));
         shader.setMat4("model", model);
         shader.use();
-        glBindVertexArray(VAO);
+        VAO.bind();
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glfwSwapBuffers(window);
