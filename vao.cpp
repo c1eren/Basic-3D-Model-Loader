@@ -33,18 +33,12 @@ void Vao::setLayout(bool positions, bool normal, bool texture, bool color, bool 
 		{
 			glEnableVertexAttribArray(1);
 			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, (void*)(step));
-			//else
-			//	glVertexAttribPointer(1, 12, GL_FLOAT, GL_FALSE, stride, (void*)0);
 			step += 12;
 		}
 		if (texture)
 		{
 			glEnableVertexAttribArray(2);
 			glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(step));
-			//else if ((positions && !normal) || (!positions && normal))
-			//	glVertexAttribPointer(2, 8, GL_FLOAT, GL_FALSE, stride, (void*)12);
-			//else
-			//	glVertexAttribPointer(2, 8, GL_FLOAT, GL_FALSE, stride, (void*)0);
 			step += 8;
 		}
 		if (color)
@@ -82,6 +76,17 @@ void Vao::setLayout(bool positions, bool normal, bool texture, bool color, bool 
 		}
 	}
 }
+
+/*
+glEnableVertexAttribArray(0);
+glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+
+glEnableVertexAttribArray(1);
+glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+
+glEnableVertexAttribArray(2);
+glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+*/
 
 void Vao::bind()
 {
