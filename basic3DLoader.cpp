@@ -3,6 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 
 #include <iostream>
+#include <vector>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -14,8 +15,18 @@
 #include "shader.h"
 #include "vao.h"
 #include "vbo.h"
+#include "ebo.h"
+#include "model.h"
+#include "camera.h"
+#include "constants.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void getFramerate();
+
+int toggle = 0;
+
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 
 int main()
 {
@@ -60,6 +71,7 @@ int main()
 
     //glfw callbacks
     glfwSetKeyCallback(window, key_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
 
     // Hide and capture cursor when application has focus
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -67,26 +79,57 @@ int main()
     // Shader
     Shader shader("shaders/basic.vs", "shaders/basic.fs");
 
+    // Model
+    Model modelLoaded("models/backpack/backpack.obj");
+    //Model modelLoaded("models/planet/planet.obj");
 
-    float squareVert[] = {
-        // Position          // Tex        // Colors   
-       -0.5f, -0.5f,  0.0f,  0.0f,  0.0f,  0.0f,  0.0f,  1.0f,     // Bottom Left
-        0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,     // Bottom Right
-        0.5f,  0.5f,  0.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f,     // Top Right
-       -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,  0.0f,     // Top Left
-       -0.5f, -0.5f,  0.0f,  0.0f,  0.0f,  0.0f,  0.0f,  1.0f,     // Bottom Left
-        0.5f,  0.5f,  0.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f      // Top Right
-    };
+    // TEMPORARY TEXTURE LOADING
+    
+    // Load image
+    int width, height, nrChannels;
+    int internalFormat = 0;
+    int imageFormat = 0;
 
-    Vao VAO;
-    Vbo VBO;
+    unsigned char* data = stbi_load("textures/container2_diffuse.png", &width, &height, &nrChannels, 0);
 
-    VAO.bind();
-    VBO.bind();
-    VBO.addData(&squareVert, sizeof(squareVert));
-    VAO.setLayout(1, 0, 1, 1, 0);
+    if (nrChannels == 4)
+    {
+        internalFormat = GL_RGBA;
+        imageFormat = GL_RGBA;
+    }
+    else
+    {
+        internalFormat = GL_RGB;
+        imageFormat = GL_RGB;
+    }
 
-    VAO.unbind();
+    unsigned int texID;
+    glGenTextures(1, &texID);
+
+    // Create Texture
+    glBindTexture(GL_TEXTURE_2D, texID);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, imageFormat, GL_UNSIGNED_BYTE, data);
+    // Set Texture wrap and filter modes
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // Unbind texture
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Free image data
+    stbi_image_free(data);
+
+    // TEMPORARY TEXTURE LOADING 
+
+
+    glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)viewport_width / (float)viewport_height, 0.1f, 100.0f);
+    shader.setMat4("projection", projection);
+
+    glBindTexture(GL_TEXTURE_2D, texID);
+    shader.setInt("u_tex", 0);
+
+    glEnable(GL_DEPTH_TEST);
 
 /*#####################################################################################################################################################*/
     // RENDER LOOP
@@ -95,18 +138,22 @@ int main()
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(0.4, 0.75, 0.60, 1.0);
-        //glClearColor(0.235, 0.701, 0.443, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        glm::mat4 view = camera.getViewMatrix();
+        shader.setMat4("view", view);
 
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(glm::sin(glfwGetTime()), 0.0f, 0.0f));
         shader.setMat4("model", model);
-        shader.use();
-        VAO.bind();
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        modelLoaded.draw(shader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        //------------------------------------------------
+
+        getFramerate(); // Important, also gets delta for camera, TODO separate this logic
     }
 
 /*#####################################################################################################################################################*/
@@ -129,9 +176,72 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
+    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
+    {
+        if (toggle == 0)
+            toggle = 1;
+        else
+            toggle = 0;
+    }
+
+    // Camera
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        camera.processKeyPress(Direction::FORWARD);
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        camera.processKeyPress(Direction::BACKWARD);
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        camera.processKeyPress(Direction::LEFT);
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        camera.processKeyPress(Direction::RIGHT);
+    }
+
     /*
         void keyCallback (GLFWwindow\* wind, int key, int scancode, int action, int mods) {
         my_input_class.keyCallback(wind, key, scancode, action, mods);
         }
     */
+}
+
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (camera.firstMouse)
+    {
+        camera.lastX = xpos;
+        camera.lastY = ypos;
+        camera.firstMouse = 0;
+    }
+
+    float xoffset = xpos - camera.lastX;           // This frames x-coord, minus the last frames x-coord
+    float yoffset = camera.lastY - ypos;           // reversed: y ranges bottom to top
+    camera.lastX = xpos;
+    camera.lastY = ypos;
+    camera.updateEulerValues(xoffset, yoffset);
+}
+
+void getFramerate()
+{
+    // Get Framerate
+    currentFrame = glfwGetTime();           // get current time 
+    deltaTime = currentFrame - lastFrame;   // difference between the time now, and the time it was when we rendered the last frame  
+    lastFrame = currentFrame;
+
+    // Measure speed
+    currentFrame = currentFrame; //glfwGetTime();
+    frameCount++;
+    // If a second has passed.
+    if (currentFrame - previousTime >= 1.0)
+    {
+        // Display the frame count here any way you want.
+        //std::cout << "                                                                  FPS: " << frameCount << std::endl; // 17 tabs across
+
+        frameCount = 0;
+        previousTime = currentFrame;
+    }
 }

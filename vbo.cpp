@@ -7,6 +7,11 @@ Vbo::Vbo()
 	glGenBuffers(1, &m_id);
 }
 
+Vbo::~Vbo()
+{
+	unbind();
+}
+
 void Vbo::addData(const void* data, unsigned int size)
 {
 	bind();

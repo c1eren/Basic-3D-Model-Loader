@@ -1,12 +1,12 @@
 #pragma once
 
-class Vbo {
+class Ebo {
 public:
     unsigned int m_id = 0;
 
 public:
-    Vbo();
-    ~Vbo();
+    Ebo();
+    ~Ebo();
 
     void addData(const void* data, unsigned int size);
     void bind();
