@@ -83,8 +83,8 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    //Model modelLoaded("models/backpack/backpack.obj");
-    Model modelLoaded("models/planet/planet.obj");
+    Model modelLoaded("models/backpack/backpack.obj");
+    //Model modelLoaded("models/planet/planet.obj");
 
     float finish = glfwGetTime();
 

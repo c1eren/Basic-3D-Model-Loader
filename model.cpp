@@ -48,6 +48,14 @@ void Model::loadModelFromFile(const std::string& filePath)
 	
 	// On successful load, process nodes recursively
 	processNode(scene->mRootNode, scene);
+
+	// Check textures against cap for batch rendering with textures
+	int maxTextures = 0;
+	glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextures);
+	if (texturesLoaded.size() > maxTextures)
+	{
+		texCapExceeded = 1;
+	}
 }
 
 void Model::processNode(aiNode* node, const aiScene* scene)
@@ -180,12 +188,40 @@ void Model::sendDataToBuffers()
 	VAO.bind();
 	VBO.addData(vData.data(), vData.size() * sizeof(Vertex));
 	EBO.addData(iData.data(), iData.size() * sizeof(unsigned int));
-	VAO.setLayoutTex3();
+	VAO.setLayout();
 	VAO.unbind();
+}
+
+void Model::bindTextures(Shader shader)
+{
+	for (unsigned int i = 0; i < texturesLoaded.size(); i++)
+	{
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_2D, texturesLoaded[i].id);
+		//std::string name = texturesLoaded[i].type;
+
+		std::string number = std::to_string(i);
+		std::string name = "u_tex[" + number + "]";
+
+		std::cout << "name: " << name.c_str() << std::endl;
+
+		// Concatenate type and number together and set a location value to correspond with active texture unit
+		shader.setInt(name.c_str(), i);
+	}
 }
 
 void Model::draw(Shader shader)
 {
+	// If it's the first draw call and we have less than 32 textures TODO, make dynamic
+	if (firstDraw)
+	{
+		if (!texCapExceeded)
+		{
+			bindTextures(shader);
+		}
+		firstDraw = 0;
+	}
+
 	// Draw model
 	shader.use();
 	VAO.bind();
