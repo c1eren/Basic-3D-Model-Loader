@@ -426,3 +426,33 @@ glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(sizeo
 glEnableVertexAttribArray(2);
 glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(sizeof(float) * 6));
 glBindVertexArray(0);
+
+
+/*
+MeshBatch mBatch;
+mBatch.indicesStart = indexOffset;
+
+for (unsigned int j = 0; j < meshes.size(); j++)
+{
+	unsigned int vertexOffset = indexOffset;
+
+	if (meshes[j].textureIds[0] == texturesLoaded[i].id)
+	{
+		mBatch.texId = texturesLoaded[i].id;
+
+		for (unsigned int k = 0; k < meshes[j].vertices.size(); k++)
+		{
+			vData.push_back(meshes[j].vertices[k]);
+		}
+		for (unsigned int k = 0; k < meshes[j].indices.size(); k++)
+		{
+			iData.push_back(meshes[j].indices[k] + vertexOffset);
+			mBatch.indicesCount += meshes[j].indices.size();
+		}
+		vertexOffset += meshes[i].vertices.size();
+	}
+	indexOffset += vertexOffset;
+}
+
+	}
+	*/

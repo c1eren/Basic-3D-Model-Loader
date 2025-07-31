@@ -9,6 +9,7 @@ unsigned int textureFromFile(const char* str, std::string directory);
 
 Model::Model(std::string filePath)
 {
+	texturesLoaded.push_back(Texture{ textureFromFile("defaultTex_diffuse.png", "textures/"), "texture_diffuse", "textures/defaultTex_diffuse.png" });
 	loadModelFromFile(filePath);
 	sendDataToBuffers();
 }
@@ -150,6 +151,11 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		std::vector<unsigned int> normalMapIds = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
 		textureIds.insert(textureIds.end(), normalMapIds.begin(), normalMapIds.end());
 	}
+	else
+	{
+		// Give default texture handle
+		textureIds.push_back(texturesLoaded[0].id);
+	}
 
 	// Return a mesh object and store in <Mesh> vector
 	return Mesh(vertices, indices, textureIds);
@@ -161,24 +167,36 @@ void Model::sendDataToBuffers()
 	std::vector<Vertex> vData;
 	std::vector<unsigned int> iData;
 	unsigned int vertexOffset = 0;
-
-	// for (meshesPerTextureId; i++)
-	//		{
-	//			vData[i].push_back(meshesPerTextureId[i].meshes[j].vertices[k]);
-	//		} // For every mesh that uses this textureID, push it's data and indices start and len onto vData array item 
-	// Mini batches, rendered per texture 
-
-	for (unsigned int i = 0; i < meshes.size(); i++)
+	
+	for (unsigned int i = 0; i < texturesLoaded.size(); i++)
 	{
-		for (unsigned int j = 0; j < meshes[i].vertices.size(); j++)
+		MeshBatch mBatch{texturesLoaded[i].id, iData.size(), 0};
+		//mBatch.texId = texturesLoaded[i].id;
+		//mBatch.indicesStart = iData.size();
+
+		for (unsigned int j = 0; j < meshes.size(); j++)
 		{
-			vData.push_back(meshes[i].vertices[j]);
+			if (meshes[j].textureIds[0] == texturesLoaded[i].id) // For now just diffuse textures (or whatever is at [0])
+			{
+				// Append vertices
+				for (unsigned int k = 0; k < meshes[j].vertices.size(); k++)
+				{
+					vData.push_back(meshes[j].vertices[k]);
+				}
+				for (unsigned int k = 0; k < meshes[j].indices.size(); k++)
+				{
+					iData.push_back(meshes[j].indices[k] + vertexOffset);
+				}
+				// Update indices count and vertex offset
+				mBatch.indicesCount += meshes[j].indices.size();
+				vertexOffset += meshes[j].vertices.size();
+			}
 		}
-		for (unsigned int j = 0; j < meshes[i].indices.size(); j++)
+
+		if (mBatch.indicesCount > 0)
 		{
-			iData.push_back(meshes[i].indices[j] + vertexOffset);
+			meshBatches.push_back(mBatch);
 		}
-		vertexOffset += meshes[i].vertices.size(); 
 	}
 
 	// Store indices count for rendering
@@ -190,6 +208,20 @@ void Model::sendDataToBuffers()
 	EBO.addData(iData.data(), iData.size() * sizeof(unsigned int));
 	VAO.setLayout();
 	VAO.unbind();
+
+	//unsigned int indexOffset = 0;
+	//for (unsigned int i = 0; i < meshes.size(); i++)
+	//{
+	//	for (unsigned int j = 0; j < meshes[i].vertices.size(); j++)
+	//	{
+	//		vData.push_back(meshes[i].vertices[j]);
+	//	}
+	//	for (unsigned int j = 0; j < meshes[i].indices.size(); j++)
+	//	{
+	//		iData.push_back(meshes[i].indices[j] + vertexOffset);
+	//	}
+	//	vertexOffset += meshes[i].vertices.size(); 
+	//}
 }
 
 void Model::bindTextures(Shader shader)
@@ -212,20 +244,31 @@ void Model::bindTextures(Shader shader)
 
 void Model::draw(Shader shader)
 {
-	// If it's the first draw call and we have less than 32 textures TODO, make dynamic
-	if (firstDraw)
-	{
-		if (!texCapExceeded)
-		{
-			bindTextures(shader);
-		}
-		firstDraw = 0;
-	}
-
-	// Draw model
 	shader.use();
 	VAO.bind();
-	glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+	// If it's the first draw call and we have less than 32 textures TODO, make dynamic
+	//if (firstDraw)
+	//{
+	//	if (!texCapExceeded)
+	//	{
+	//		bindTextures(shader);
+	//	}
+	//	firstDraw = 0;
+	//}
+
+	//glBindTexture(GL_TEXTURE_2D, texturesLoaded[1].id);
+	
+	for (unsigned int i = 0; i < meshBatches.size(); i++)
+	{
+		glActiveTexture(GL_TEXTURE0 + i); // Activate texture unit 0
+		glBindTexture(GL_TEXTURE_2D, meshBatches[i].texId);
+		glDrawElementsBaseVertex(GL_TRIANGLES, meshBatches[i].indicesCount, GL_UNSIGNED_INT, (void*)(meshBatches[i].indicesStart),0);
+	}
+	
+	// Draw model
+	//shader.use();
+	//VAO.bind();
+	//glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
 }
 
 unsigned int textureFromFile(const char* str, std::string directory)
