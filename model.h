@@ -12,14 +12,24 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+struct Texture {
+	unsigned int id;
+	std::string type;
+	std::string path;
+};
+
 class Model {
 public:
 	std::vector<Mesh> meshes;
+	std::vector<Texture> texturesLoaded;
+
 	unsigned int indicesCount = 0;
 
 	Vao VAO;
 	Vbo VBO;
 	Ebo EBO;
+
+	std::string directory;
 
 public:
 	Model(std::string filePath);
@@ -30,6 +40,8 @@ public:
 	void processNode(aiNode* node, const aiScene* scene);
 
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+
+	std::vector<unsigned int> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
 
 	// Fill buffers
 	void sendDataToBuffers();

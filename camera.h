@@ -12,15 +12,18 @@ const float pitch		= 0.0f;
 const float speed		= 200.0f;
 const float sensitivity = 0.1f;
 const float zoom		= 45.0f;
+const float maxSpeed	= 500.0f;
+const float accelRate	= 10.0f;
 
 const glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f); // World up position (absolute, normalized)
 
-// Enum practice
 enum class Direction : unsigned char {
 	FORWARD,
 	BACKWARD,
 	LEFT,
-	RIGHT
+	RIGHT,
+	UP,
+	DOWN
 };
 
 class Camera {
@@ -34,10 +37,7 @@ public:
 	float lastX = 400;
 	float lastY = 300;
 
-	float camRoll	= 0.0f; // Bool/float roll amount
 	bool firstMouse = 1;
-	bool camFPS		= 0;    // Turn FPS cam on or off
-	bool cameraRoll = 0;
 
 	float camZoom;
 	float camSensitivity;

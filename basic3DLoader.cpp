@@ -62,6 +62,10 @@ int main()
     GLint nrAttributes;
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
     std::cout << "Maximum nr of vertex attributes supported: " << nrAttributes << std::endl;
+    
+    int maxTextures = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextures);
+    std::cout << "Max sampler2D units: " << maxTextures << std::endl;
     */
 
     //viewport
@@ -76,12 +80,20 @@ int main()
     // Hide and capture cursor when application has focus
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+    float start = glfwGetTime();
+
+    // Model
+    //Model modelLoaded("models/backpack/backpack.obj");
+    Model modelLoaded("models/planet/planet.obj");
+
+    float finish = glfwGetTime();
+
+    std::cout << "                                                                  Model load time: " << finish - start << std::endl;
+
     // Shader
     Shader shader("shaders/basic.vs", "shaders/basic.fs");
 
-    // Model
-    Model modelLoaded("models/backpack/backpack.obj");
-    //Model modelLoaded("models/planet/planet.obj");
+    
 
     // TEMPORARY TEXTURE LOADING
     
@@ -201,6 +213,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     {
         camera.processKeyPress(Direction::RIGHT);
     }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    {
+        camera.processKeyPress(Direction::UP);
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+    {
+        camera.processKeyPress(Direction::DOWN);
+    }
 
     /*
         void keyCallback (GLFWwindow\* wind, int key, int scancode, int action, int mods) {
@@ -245,3 +265,15 @@ void getFramerate()
         previousTime = currentFrame;
     }
 }
+
+/*
+*______________________________________________________________________________________________________________________________________________________________________________________
+|Problem                               | When it matters                            | Fix
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|Different materials/textures per mesh | If the model uses multiple materials	    | Track mesh index ranges (Mesh.indicesStart, Mesh.indexCount) and draw subranges in separate calls
+|                                      |                                            |
+|Animations or dynamic meshes	       | If the model uses bones or morphs	        | Use a more advanced system (e.g., SkinnedMesh class)
+|                                      |                                            |
+|Selective rendering	               | If you want to hide/show individual meshes | Store per-mesh indexCount and offset for glDrawElementsBaseVertex or draw subsets manually
+*--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+*/

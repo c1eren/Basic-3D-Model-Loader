@@ -9,6 +9,7 @@ public:
 	~Vao() {}
 
 	void setLayout(bool positions = 1, bool normal = 1, bool texture = 1, bool color = 0, bool block = 0);
+	void setLayoutTex3(bool positions = 1, bool normal = 1, bool texture = 1, bool color = 0, bool block = 0);
 
 	void bind();
 	void unbind();

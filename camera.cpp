@@ -4,7 +4,7 @@
 unsigned int Camera::camNumber = 0; // To set camId to new value every time
 
 Camera::Camera(glm::vec3 camPosition, glm::vec3 camFront)
-    : cameraPos(camPosition), cameraFront(camFront), camYaw(yaw), camPitch(pitch), camZoom(zoom), camSensitivity(sensitivity), camSpeed(speed)
+    : cameraPos(camPosition), cameraFront(camFront), camYaw(yaw), camPitch(pitch), camZoom(zoom), camSensitivity(sensitivity), camSpeed(0.0f)
 {
 	this->camId = camNumber;
 	camNumber++;
@@ -15,53 +15,45 @@ Camera::Camera(glm::vec3 camPosition, glm::vec3 camFront)
 void Camera::processKeyPress(Direction dir)
 {
     hasMoved = 1;
-    float velocity = camSpeed * deltaTime;
+
+    //if (camSpeed < maxSpeed)
+    //{
+    //    camSpeed += accelRate;
+    //}
+    //else if (camSpeed > maxSpeed)
+    //{
+    //    camSpeed = maxSpeed;
+    //}
+
+    float velocity = maxSpeed * deltaTime;
+
 
     if (dir == Direction::FORWARD)
     {
-        if (camFPS)
-        {
-            cameraPos += glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z)) * velocity; // This works for FPS mode. We set normalized direction values, but only add strength to chosen axis'.
-        }
-        else
-            cameraPos += cameraFront * velocity;
+        cameraPos += cameraFront * velocity;
     }
     if (dir == Direction::BACKWARD)
     {
-        if (camFPS)
-        {
-            cameraPos -= glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z)) * velocity;
-        }
-        else
-        {
-            cameraPos -= cameraFront * velocity;
-        }
+        cameraPos -= cameraFront * velocity;
     }
     if (dir == Direction::LEFT)
     {
         cameraPos -= cameraX * velocity;
-        if (cameraRoll)
-        {
-            camRoll--;
-            if (camRoll < -5.0f)
-            {
-                camRoll = -5.0f;
-            }
-        }
     }
     if (dir == Direction::RIGHT)
     {
         cameraPos += cameraX * velocity;
-        if (cameraRoll)
-        {
-            camRoll++;
-            if (camRoll > 5.0f)
-            {
-                camRoll = 5.0f;
-            }
-        }
     }
+    if (dir == Direction::UP)
+    {
+        cameraPos += worldUp * velocity;
+    }
+    if (dir == Direction::DOWN)
+    {
+        cameraPos -= worldUp * velocity;
+    }    
 }
+
 
 void Camera::processMouseScroll(float yoffset)
 {
@@ -110,48 +102,22 @@ void Camera::updateCameraFrontVectors()
     cameraFront = glm::normalize(direction);
     cameraX = glm::normalize(glm::cross(cameraFront, worldUp));                 // Get perpendicular axis, relative to the camera in the world
     cameraY = glm::normalize(glm::cross(cameraX, cameraFront)); 
-
 }
 
 
 glm::mat4 Camera::getViewMatrix()
 {
-    /*
-    if (cameraRoll && camRoll != 0.0f)
-    {
-        glm::vec3 finalRight = cameraX;
-        glm::vec3 finalUp    = cameraY;
-
-        //roll rotation on camerafront axis
-        glm::mat4 rollRotation  = glm::mat4(1.0f);
-        rollRotation            = glm::rotate(rollRotation, glm::radians(camRoll), cameraFront);
-        finalRight              = glm::mat3(rollRotation) * cameraX;
-        finalUp                 = glm::mat3(rollRotation) * cameraY;
-
-        return glm::lookAt(cameraPos, cameraPos + cameraFront, finalUp);
-    }
-    */
-    //return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraY);
-
     return lookAT();
-
 }
 
 glm::mat4 Camera::lookAT()
 {
     // Get z,x,y axis 
-    glm::vec3 cameraDirection = glm::normalize(-cameraFront); // Gives Vector direction that points back at the camera, Cameras forward vector is: -cameraDirection; aligns on cameras local z-axis
+    glm::vec3 cameraDirection = glm::normalize(-cameraFront); 
     glm::vec3 cameraX         = glm::normalize(glm::cross(worldUp, cameraDirection));
     glm::vec3 cameraY         = glm::cross(cameraDirection, cameraX);
 
-    // Create translation matrix
-    /*
-    glm::mat4 translation = glm::mat4(1.0f); // Identity matrix
-    translation[3][0] = -cameraPos.x;
-    translation[3][1] = -cameraPos.y;
-    translation[3][2] = -cameraPos.z;
-    */
-
+    // Translation matrix
     glm::mat4 translation = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
                                       0.0f, 1.0f, 0.0f, 0.0f,
                                       0.0f, 0.0f, 1.0f, 0.0f,
