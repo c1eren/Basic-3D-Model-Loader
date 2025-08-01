@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 
 #include "mesh.h"
 #include "vao.h"
@@ -26,6 +27,7 @@ struct MeshBatch {
 
 class Model {
 public:
+	std::unordered_map<unsigned int, std::vector<Mesh>> texMap;
 	std::vector<Mesh> meshes;
 	std::vector<Texture> texturesLoaded;
 	std::vector<MeshBatch> meshBatches;
@@ -40,6 +42,7 @@ public:
 
 	bool firstDraw		= 1;
 	bool texCapExceeded = 0;
+	bool flipUVs		= 1;
 
 public:
 	Model(std::string filePath);

@@ -23,6 +23,7 @@
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void getFramerate();
+unsigned int textureFromFile(const char* str, std::string directory);
 
 int toggle = 0;
 
@@ -83,65 +84,26 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    Model modelLoaded("models/backpack/backpack.obj");
+    //Model modelLoaded("models/backpack/backpack.obj");
     //Model modelLoaded("models/planet/planet.obj");
+    //Model modelLoaded("models/Tree1/Tree1.obj");
+    Model modelLoaded("models/abandonedHouse/cottage_obj.obj");
+    //Model modelLoaded("models/53-cottage_fbx/cottage_fbx.fbx");
 
     float finish = glfwGetTime();
 
     std::cout << "                                                                  Model load time: " << finish - start << std::endl;
 
+    //unsigned int texId = textureFromFile("/cottage_diffuse.png", "models/abandonedHouse");
+
     // Shader
     Shader shader("shaders/basic.vs", "shaders/basic.fs");
 
-    
-
-    // TEMPORARY TEXTURE LOADING
-    
-    // Load image
-    int width, height, nrChannels;
-    int internalFormat = 0;
-    int imageFormat = 0;
-
-    unsigned char* data = stbi_load("textures/container2_diffuse.png", &width, &height, &nrChannels, 0);
-
-    if (nrChannels == 4)
-    {
-        internalFormat = GL_RGBA;
-        imageFormat = GL_RGBA;
-    }
-    else
-    {
-        internalFormat = GL_RGB;
-        imageFormat = GL_RGB;
-    }
-
-    unsigned int texID;
-    glGenTextures(1, &texID);
-
-    // Create Texture
-    glBindTexture(GL_TEXTURE_2D, texID);
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, imageFormat, GL_UNSIGNED_BYTE, data);
-    // Set Texture wrap and filter modes
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // Unbind texture
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // Free image data
-    stbi_image_free(data);
-
-    // TEMPORARY TEXTURE LOADING 
-
-
-    glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)viewport_width / (float)viewport_height, 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)viewport_width / (float)viewport_height, 0.1f, 200.0f);
     shader.setMat4("projection", projection);
 
-    glBindTexture(GL_TEXTURE_2D, texID);
-    shader.setInt("u_tex", 0);
-
     glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_FRAMEBUFFER_SRGB);
 
 /*#####################################################################################################################################################*/
     // RENDER LOOP
@@ -156,7 +118,10 @@ int main()
         shader.setMat4("view", view);
 
         glm::mat4 model = glm::mat4(1.0f);
+        model = glm::scale(model, glm::vec3(0.5f));
         shader.setMat4("model", model);
+
+        //glBindTexture(GL_TEXTURE_2D, texId);
 
         modelLoaded.draw(shader);
 
