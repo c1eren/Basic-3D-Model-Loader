@@ -99,7 +99,8 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	// Store mesh data in temporary vertices buffer
 	std::vector<Vertex>		  vertices;
 	std::vector<unsigned int> indices;
-	std::vector<unsigned int> textureIds;
+	std::vector<TexIdType> textureIds;
+	TexIdType tex;
 
 	// Position vector
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
@@ -158,7 +159,6 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	std::vector<unsigned int> diffuseMapIds;
 	std::vector<unsigned int> specularMapIds;
 	std::vector<unsigned int> normalMapIds;
-	unsigned int texId = 0;
 
 	// If mesh has an entry point to scene materials array (-1 if not exists)
 	if (mesh->mMaterialIndex >= 0)
@@ -177,37 +177,34 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		//textureIds.insert(textureIds.end(), normalMapIds.begin(), normalMapIds.end());
 
 	}
+	else
+	{
+		tex.diff = 1;
+	}
 
 	if (!diffuseMapIds.empty())
 	{
 		std::cout << "texId: diffuse" << std::endl;
-		texId = diffuseMapIds[0];
-		std::cout << texId << "\n";
+		tex.diff = diffuseMapIds[0];
 	}
-	else if (!specularMapIds.empty())
+	if (!specularMapIds.empty())
 	{
 		std::cout << "texId: specular" << std::endl;
-		texId = specularMapIds[0];
+		tex.spec = specularMapIds[0];
 	}
-	else if (!normalMapIds.empty())
+	if (!normalMapIds.empty())
 	{
 		std::cout << "texId: normal" << std::endl;
-		texId = normalMapIds[0];
-	}
-	else
-	{
-		std::cout << "texId: default" << std::endl;
-		texId = 1;
+		tex.norm = normalMapIds[0];
 	}
 
-	//std::cout << "texturesLoaded[0].id: " << texturesLoaded[0].id << std::endl;
-
-	textureIds.push_back(texId);
-	std::cout << "texId: " << texId << std::endl;
-
-
+	// Organises via diffuse texture
+	textureIds.push_back(tex);
 	Mesh retMesh{ vertices, indices, textureIds };
-	texMap[texId].push_back(retMesh);
+	if (tex.diff || tex.spec || tex.norm)
+	{
+		texMap[tex.diff].push_back(retMesh);
+	}
 
 	// Return a mesh object and store in <Mesh> vector
 	return retMesh;
@@ -366,7 +363,13 @@ void Model::draw(Shader shader)
 	{
 		//std::cout << "meshBatches.texId: " << meshBatches[i].texId << std::endl;
 
-		glBindTexture(GL_TEXTURE_2D, meshBatches[i].texId);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, meshBatches[i].texIds.diff);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, meshBatches[i].texIds.spec);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, meshBatches[i].texIds.norm);
+		shader.setInt("u_texture_normal", 1);
 		glDrawElementsBaseVertex(GL_TRIANGLES, meshBatches[i].indicesCount, GL_UNSIGNED_INT, (void*)(meshBatches[i].indicesStart),0);
 	}
 	

@@ -84,10 +84,10 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    //Model modelLoaded("models/backpack/backpack.obj");
+    Model modelLoaded("models/backpack/backpack.obj");
     //Model modelLoaded("models/planet/planet.obj");
     //Model modelLoaded("models/Tree1/Tree1.obj");
-    Model modelLoaded("models/abandonedHouse/cottage_obj.obj");
+    //Model modelLoaded("models/abandonedHouse/cottage_obj.obj");
     //Model modelLoaded("models/53-cottage_fbx/cottage_fbx.fbx");
 
     float finish = glfwGetTime();

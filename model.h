@@ -20,7 +20,7 @@ struct Texture {
 };
 
 struct MeshBatch {
-	unsigned int texId;
+	TexIdType texIds;
 	unsigned int indicesStart;
 	unsigned int indicesCount;
 };
@@ -42,7 +42,7 @@ public:
 
 	bool firstDraw		= 1;
 	bool texCapExceeded = 0;
-	bool flipUVs		= 1;
+	bool flipUVs		= 0;
 
 public:
 	Model(std::string filePath);
