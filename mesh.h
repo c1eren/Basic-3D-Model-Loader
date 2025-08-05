@@ -9,21 +9,23 @@ struct Vertex {
 	glm::vec2 uv;
 };
 
-struct TexIdType {
-	unsigned int diff;
-	unsigned int spec;
-	unsigned int norm;
-};
-
-
 class Mesh {
 public:
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
-	std::vector<TexIdType> textureIds;
+	unsigned int texIds[3];
+	unsigned int indicesStart = 0;
+	unsigned int indicesCount = 0;
+	unsigned int baseVertex	  = 0;
 	
 public:
-	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, std::vector<TexIdType> textureIds)
-		: vertices(vertices), indices(indices), textureIds(textureIds) { };
+	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, unsigned int ids[3])
+		: vertices(vertices), indices(indices) 
+	{
+		for (unsigned int i = 0; i < 3; i++)
+		{
+			texIds[i] = ids[i];
+		}
+	}
 	~Mesh() {}
 };

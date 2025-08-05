@@ -19,30 +19,29 @@ struct Texture {
 	std::string path;
 };
 
-struct MeshBatch {
-	TexIdType texIds;
-	unsigned int indicesStart;
-	unsigned int indicesCount;
+struct TexturesBound {
+	unsigned int diff = 0;
+	unsigned int spec = 0;
+	unsigned int norm = 0;
 };
+
 
 class Model {
 public:
-	std::unordered_map<unsigned int, std::vector<Mesh>> texMap;
 	std::vector<Mesh> meshes;
 	std::vector<Texture> texturesLoaded;
-	std::vector<MeshBatch> meshBatches;
-
-	unsigned int indicesCount = 0;
+	TexturesBound tBound;
 
 	Vao VAO;
 	Vbo VBO;
 	Ebo EBO;
 
-	std::string directory;
+	unsigned int verticesCount = 0;
+	unsigned int indicesCount = 0;
+	bool flipUVs = 0;
+	bool firstDraw = 1;
 
-	bool firstDraw		= 1;
-	bool texCapExceeded = 0;
-	bool flipUVs		= 0;
+	std::string directory;
 
 public:
 	Model(std::string filePath);
@@ -55,8 +54,6 @@ public:
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 
 	std::vector<unsigned int> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
-
-	void bindTextures(Shader shader);
 
 	// Fill buffers
 	void sendDataToBuffers();

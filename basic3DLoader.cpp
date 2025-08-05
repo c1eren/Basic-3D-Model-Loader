@@ -121,8 +121,6 @@ int main()
         model = glm::scale(model, glm::vec3(0.5f));
         shader.setMat4("model", model);
 
-        //glBindTexture(GL_TEXTURE_2D, texId);
-
         modelLoaded.draw(shader);
 
         glfwSwapBuffers(window);
