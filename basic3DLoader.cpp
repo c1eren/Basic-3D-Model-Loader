@@ -84,7 +84,7 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    Model modelLoaded("models/backpack/backpack.obj");
+    Model modelLoaded("models/backpack/backpack.obj", 0);
     //Model modelLoaded("models/planet/planet.obj");
     //Model modelLoaded("models/Tree1/Tree1.obj");
     //Model modelLoaded("models/abandonedHouse/cottage_obj.obj");
@@ -92,9 +92,7 @@ int main()
 
     float finish = glfwGetTime();
 
-    std::cout << "                                                                  Model load time: " << finish - start << std::endl;
-
-    //unsigned int texId = textureFromFile("/cottage_diffuse.png", "models/abandonedHouse");
+    std::cout << "                                                            Total model load time: " << finish - start << std::endl;
 
     // Shader
     Shader shader("shaders/basic.vs", "shaders/basic.fs");
@@ -118,7 +116,6 @@ int main()
         shader.setMat4("view", view);
 
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::scale(model, glm::vec3(0.5f));
         shader.setMat4("model", model);
 
         modelLoaded.draw(shader);
@@ -222,7 +219,7 @@ void getFramerate()
     if (currentFrame - previousTime >= 1.0)
     {
         // Display the frame count here any way you want.
-        //std::cout << "                                                                  FPS: " << frameCount << std::endl; // 17 tabs across
+        std::cout << "                                                                  FPS: " << frameCount << std::endl; // 17 tabs across
 
         frameCount = 0;
         previousTime = currentFrame;

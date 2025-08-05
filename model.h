@@ -44,7 +44,7 @@ public:
 	std::string directory;
 
 public:
-	Model(std::string filePath);
+	Model(std::string filePath, bool flipUVs = 1);
 	~Model(){}
 
 	void loadModelFromFile(const std::string& filePath);
@@ -53,7 +53,7 @@ public:
 
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 
-	std::vector<unsigned int> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
+	unsigned int loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
 
 	// Fill buffers
 	void sendDataToBuffers();

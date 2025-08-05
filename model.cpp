@@ -3,13 +3,17 @@
 #include <glad/glad.h>
 #include "stb_image.h"
 
+#include <GLFW/glfw3.h>
+
 #include <iostream>
 
 unsigned int textureFromFile(const char* str, std::string directory);
 
-Model::Model(std::string filePath)
+Model::Model(std::string filePath, bool flipUVs)
 {
+	this->flipUVs = flipUVs;
 	texturesLoaded.push_back(Texture{ textureFromFile("defaultTex_diffuse.png", "textures"), "texture_diffuse", "textures/defaultTex_diffuse.png" });
+
 	loadModelFromFile(filePath);
 	sendDataToBuffers();
 }
@@ -19,6 +23,9 @@ void Model::loadModelFromFile(const std::string& filePath)
 	// Assimp importer object, read file with flags
 	Assimp::Importer importer;
 	const aiScene* scene;
+
+	// DEBUG for timing
+	float start = glfwGetTime();
 	if (flipUVs)
 	{
 		scene = importer.ReadFile(filePath,
@@ -39,10 +46,16 @@ void Model::loadModelFromFile(const std::string& filePath)
 			aiProcess_SortByPType);
 	}
 
+	//	float start = glfwGetTime();
 	//const aiScene* scene = importer.ReadFile(filePath,
 	//	aiProcess_Triangulate |
 	//	aiProcess_FlipUVs
 	//	);
+
+	float finish = glfwGetTime();
+	std::cout << "                                                          Assimp import load time: " << finish - start << std::endl;
+	// DEBUG for timing
+	float loadStart = glfwGetTime();
 
 	// Error handling
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
@@ -62,6 +75,9 @@ void Model::loadModelFromFile(const std::string& filePath)
 	
 	// On successful load, process nodes recursively
 	processNode(scene->mRootNode, scene);
+
+	float loadFinish = glfwGetTime();
+	std::cout << "                                                        Import data handling time: " << loadFinish - loadStart << std::endl;
 }
 
 void Model::processNode(aiNode* node, const aiScene* scene)
@@ -151,16 +167,9 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		// Get aiMaterial object at that location
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-		unsigned int diff = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse")[0];
-		unsigned int spec = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular")[0];
-		unsigned int norm = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal")[0];
-
-		if (diff)
-		texIds[0] = diff;
-		if (spec)
-		texIds[1] = spec;
-		if (norm)
-		texIds[2] = norm;
+		texIds[0] = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+		texIds[1] = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+		texIds[2] = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
 	}
 	else
 	{
@@ -234,9 +243,13 @@ void Model::draw(Shader shader)
 		{
 			glBindTextures(0, 3, meshes[i].texIds);
 
-			tBound.diff = meshes[i].texIds[0];
-			tBound.spec = meshes[i].texIds[1];
-			tBound.norm = meshes[i].texIds[2];
+			//tBound.diff = meshes[i].texIds[0];
+			//tBound.spec = meshes[i].texIds[1];
+			//tBound.norm = meshes[i].texIds[2];
+			//std::cout << "new diff id: " << meshes[i].texIds[0]
+			//	<< "\n new spec id: " << meshes[i].texIds[1]
+			//	<< "\n new norm id: " << meshes[i].texIds[2]
+			//	<< std::endl;
 		}
 
 		glDrawElementsBaseVertex(GL_TRIANGLES, meshes[i].indicesCount, GL_UNSIGNED_INT, (void*)meshes[i].indicesStart, meshes[i].baseVertex);
@@ -292,12 +305,13 @@ unsigned int textureFromFile(const char* str, std::string directory)
 	return texId;
 }
 
-std::vector<unsigned int> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName)
+unsigned int Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName)
 {
-	std::vector<unsigned int> textureIds;
+	//std::vector<unsigned int> textureIds;
+	unsigned int texId = 0;
 
 	if (!mat)
-		return textureIds;
+		return 0;
 
 	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
 	{
@@ -313,7 +327,7 @@ std::vector<unsigned int> Model::loadMaterialTextures(aiMaterial* mat, aiTexture
 			if (!std::strcmp(texturesLoaded[j].path.data(), str.C_Str()))
 			{
 				// Mesh will use this texture
-				textureIds.push_back(texturesLoaded[j].id);
+				texId = texturesLoaded[j].id;
 				skip = 1;
 				break;
 			}
@@ -321,14 +335,14 @@ std::vector<unsigned int> Model::loadMaterialTextures(aiMaterial* mat, aiTexture
 
 		if (!skip)
 		{
-			unsigned int texId = textureFromFile(str.C_Str(), directory);
-			if (texId)
+			unsigned int temp = textureFromFile(str.C_Str(), directory);
+			if (temp)
 			{
-				textureIds.push_back(texId);
+				texId = temp;
 				texturesLoaded.push_back(Texture{ texId, typeName, str.C_Str() });
 			}
 		}
 	}
 
-	return textureIds;
+	return texId;
 }
