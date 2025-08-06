@@ -167,6 +167,21 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		// Get aiMaterial object at that location
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
+		/*
+			aiMaterial* mat = .....
+			// The generic way
+			if(AI_SUCCESS != mat->Get(<material-key>,<where-to-store>)) {
+			// handle epic failure here
+			}
+
+			aiString name;
+			mat->Get(AI_MATKEY_NAME,name);
+			Or for the diffuse color ('color' won't be modified if the property is not set)
+
+			aiColor3D color (0.f,0.f,0.f);
+			mat->Get(AI_MATKEY_COLOR_DIFFUSE,color);
+		*/
+
 		texIds[0] = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
 		texIds[1] = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 		texIds[2] = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");

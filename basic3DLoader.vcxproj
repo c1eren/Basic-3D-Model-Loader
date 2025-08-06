@@ -148,9 +148,12 @@
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="model.cpp" />
     <ClCompile Include="shader.cpp" />
+    <ClCompile Include="skybox.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="vao.cpp" />
     <ClCompile Include="vbo.cpp" />
+    <None Include="shaders\cubeMap.fs" />
+    <None Include="shaders\cubeMap.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
@@ -159,6 +162,7 @@
     <ClInclude Include="mesh.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="shader.h" />
+    <ClInclude Include="skybox.h" />
     <ClInclude Include="vao.h" />
     <ClInclude Include="vbo.h" />
   </ItemGroup>

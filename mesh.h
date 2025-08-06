@@ -9,6 +9,10 @@ struct Vertex {
 	glm::vec2 uv;
 };
 
+struct Materials {
+
+};
+
 class Mesh {
 public:
 	std::vector<Vertex> vertices;
