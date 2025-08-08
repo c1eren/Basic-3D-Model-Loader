@@ -48,6 +48,9 @@
     <ClCompile Include="skybox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="shaders\shaderDump.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="shader.h">
@@ -86,6 +89,8 @@
     </None>
     <None Include="shaders\cubeMap.fs" />
     <None Include="shaders\cubeMap.vs" />
+    <None Include="shaders\modelShader.vs" />
+    <None Include="shaders\modelShader.fs" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\defaultTex_diffuse.png">

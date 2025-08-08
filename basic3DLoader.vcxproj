@@ -148,12 +148,20 @@
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="model.cpp" />
     <ClCompile Include="shader.cpp" />
+    <ClCompile Include="shaders\shaderDump.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="skybox.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="vao.cpp" />
     <ClCompile Include="vbo.cpp" />
     <None Include="shaders\cubeMap.fs" />
     <None Include="shaders\cubeMap.vs" />
+    <None Include="shaders\modelShader.fs" />
+    <None Include="shaders\modelShader.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />

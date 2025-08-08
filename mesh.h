@@ -9,8 +9,10 @@ struct Vertex {
 	glm::vec2 uv;
 };
 
-struct Materials {
-
+struct Material {
+	float shininess = 1.0f;
+	glm::vec3 ambient = glm::vec3(0.2f);
+	glm::vec3 diffuse = glm::vec3(1.0f);
 };
 
 class Mesh {
@@ -21,6 +23,7 @@ public:
 	unsigned int indicesStart = 0;
 	unsigned int indicesCount = 0;
 	unsigned int baseVertex	  = 0;
+	Material materials;
 	
 public:
 	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, unsigned int ids[3])

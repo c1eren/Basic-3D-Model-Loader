@@ -1,5 +1,4 @@
 #include "model.h"
-#include <glm/glm.hpp>
 #include <glad/glad.h>
 #include "stb_image.h"
 

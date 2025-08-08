@@ -3,7 +3,6 @@ out vec4 FragColor;
 
 in vec4 FragPos;
 in vec2 TexCoords;
-in vec3 TexIds;
 
 uniform sampler2D u_texture_diffuse;
 uniform sampler2D u_texture_specular;
@@ -18,4 +17,8 @@ void main()
 	vec4 normTex = texture(u_texture_normal, TexCoords);
 
 	FragColor = diffTex;
+	if (FragColor.a < 1.0)
+	{
+		discard;
+	}
 }
