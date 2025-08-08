@@ -9,6 +9,7 @@
 #include "ebo.h"
 #include "shader.h"
 
+#include <glm/glm.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -28,6 +29,13 @@ struct TexturesBound {
 
 class Model {
 public:
+	Model(std::string filePath, bool flipUVs = 1);
+	~Model(){}
+
+	// Render
+	void draw(Shader shader);
+
+private:
 	std::vector<Mesh> meshes;
 	std::vector<Texture> texturesLoaded;
 	TexturesBound tBound;
@@ -43,10 +51,7 @@ public:
 
 	std::string directory;
 
-public:
-	Model(std::string filePath, bool flipUVs = 1);
-	~Model(){}
-
+private:
 	void loadModelFromFile(const std::string& filePath);
 
 	void processNode(aiNode* node, const aiScene* scene);
@@ -57,10 +62,4 @@ public:
 
 	// Fill buffers
 	void sendDataToBuffers();
-
-	// Render
-	void draw(Shader shader);
-	
-
-
 };

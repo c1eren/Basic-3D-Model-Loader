@@ -1,5 +1,4 @@
 #include "model.h"
-#include <glm/glm.hpp>
 #include <glad/glad.h>
 #include "stb_image.h"
 
@@ -218,16 +217,20 @@ void Model::sendDataToBuffers()
 
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
+		std::vector<Vertex> meshVertices = meshes[i].getVertices();
+		std::vector<unsigned int> meshIndices = meshes[i].getIndices();
+
 		// Flattening multiple meshes' vertices into a single vertex buffer.
-		vData.insert(vData.end(), meshes[i].vertices.begin(), meshes[i].vertices.end());
-		iData.insert(iData.end(), meshes[i].indices.begin(), meshes[i].indices.end());
+		vData.insert(vData.end(), meshVertices.begin(), meshVertices.end());
+		iData.insert(iData.end(), meshIndices.begin(),meshIndices.end());
 
-		meshes[i].indicesStart = indicesOffset * sizeof(unsigned int);
-		meshes[i].indicesCount = meshes[i].indices.size();
-		meshes[i].baseVertex = vertexOffset;
+		TrackIndices tInd{ indicesOffset * sizeof(unsigned int),
+							meshIndices.size(),
+							vertexOffset };
+		meshes[i].setTrackIndices(tInd);
 
-		indicesOffset += meshes[i].indices.size();
-		vertexOffset += meshes[i].vertices.size();
+		indicesOffset += meshIndices.size();
+		vertexOffset +=meshVertices.size();
 	}
 
 	// Sending data to GPU
@@ -254,9 +257,10 @@ void Model::draw(Shader shader)
 
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
-		if (tBound.diff != meshes[i].texIds[0] || tBound.spec != meshes[i].texIds[1] || tBound.norm != meshes[i].texIds[2])
+		unsigned int* meshTexIds = meshes[i].getTexIds();
+		if (tBound.diff != meshTexIds[0] || tBound.spec != meshTexIds[1] || tBound.norm != meshTexIds[2])
 		{
-			glBindTextures(0, 3, meshes[i].texIds);
+			glBindTextures(0, 3, meshTexIds);
 
 			//tBound.diff = meshes[i].texIds[0];
 			//tBound.spec = meshes[i].texIds[1];
@@ -267,7 +271,7 @@ void Model::draw(Shader shader)
 			//	<< std::endl;
 		}
 
-		glDrawElementsBaseVertex(GL_TRIANGLES, meshes[i].indicesCount, GL_UNSIGNED_INT, (void*)meshes[i].indicesStart, meshes[i].baseVertex);
+		glDrawElementsBaseVertex(GL_TRIANGLES, meshes[i].getIndicesCount(), GL_UNSIGNED_INT, (void*)meshes[i].getIndicesStart(), meshes[i].getBaseVertex());
 	}
 }
 

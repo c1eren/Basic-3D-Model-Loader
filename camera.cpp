@@ -107,6 +107,7 @@ void Camera::updateCameraFrontVectors()
 
 glm::mat4 Camera::getViewMatrix()
 {
+    hasMoved = 0;
     return lookAT();
 }
 
