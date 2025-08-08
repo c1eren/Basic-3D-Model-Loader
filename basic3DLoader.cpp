@@ -19,6 +19,7 @@
 #include "model.h"
 #include "camera.h"
 #include "constants.h"
+#include "skybox.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -94,11 +95,41 @@ int main()
 
     std::cout << "                                                            Total model load time: " << finish - start << std::endl;
 
+    // Cubemap faces
+    std::vector<std::string> bigBlue_faces = {
+        "skybox/skybox/right.jpg",
+        "skybox/skybox/left.jpg",
+        "skybox/skybox/top.jpg",
+        "skybox/skybox/bottom.jpg",
+        "skybox/skybox/front.jpg",
+        "skybox/skybox/back.jpg"
+    };
+
+    std::vector<std::string> milkyway_faces = {
+        "skybox/milkyway/right.png",
+        "skybox/milkyway/left.png",
+        "skybox/milkyway/top.png",
+        "skybox/milkyway/bottom.png",
+        "skybox/milkyway/front.png",
+        "skybox/milkyway/back.png"
+    };
+
+    // Skybox
+    Skybox skybox(bigBlue_faces);
+    //Skybox skybox(milkyway_faces);
+
     // Shader
-    Shader shader("shaders/basic.vs", "shaders/basic.fs");
+    Shader shaders[2];
+    Shader shader("shaders/modelShader.vs", "shaders/modelShader.fs");
+    Shader skyboxShader("shaders/cubeMap.vs", "shaders/cubeMap.fs");
+    shaders[0] = shader;
+    shaders[1] = skyboxShader;
 
     glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)viewport_width / (float)viewport_height, 0.1f, 200.0f);
-    shader.setMat4("projection", projection);
+    for (unsigned int i = 0; i < (sizeof(shaders) / sizeof(shaders[0])); i++)
+    {
+        shaders[i].setMat4("projection", projection);
+    }
 
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_FRAMEBUFFER_SRGB);
@@ -112,13 +143,20 @@ int main()
         glClearColor(0.4, 0.75, 0.60, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 view = camera.getViewMatrix();
-        shader.setMat4("view", view);
-
+        if (camera.hasMoved)
+        {
+            glm::mat4 view = camera.getViewMatrix();
+            shader.setMat4("view", view);
+            skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));    // Eliminating translation factor from mat4
+        }
         glm::mat4 model = glm::mat4(1.0f);
         shader.setMat4("model", model);
+        glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+        shader.setMat3("normalMatrix", normalMatrix);
 
         modelLoaded.draw(shader);
+
+        skybox.draw(skyboxShader);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
