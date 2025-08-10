@@ -160,26 +160,16 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		}
 	}
 
+	MaterialProperties tempProp;
+	MaterialColors	   tempCols;
 	// If mesh has an entry point to scene materials array (-1 if not exists)
 	if (mesh->mMaterialIndex >= 0)
 	{
 		// Get aiMaterial object at that location
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-		/*
-			aiMaterial* mat = .....
-			// The generic way
-			if(AI_SUCCESS != mat->Get(<material-key>,<where-to-store>)) {
-			// handle epic failure here
-			}
-
-			aiString name;
-			mat->Get(AI_MATKEY_NAME,name);
-			Or for the diffuse color ('color' won't be modified if the property is not set)
-
-			aiColor3D color (0.f,0.f,0.f);
-			mat->Get(AI_MATKEY_COLOR_DIFFUSE,color);
-		*/
+		tempProp = loadMaterialProperties(material);
+		tempCols	= loadMaterialColors(material);
 
 		texIds[0] = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
 		texIds[1] = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
@@ -199,7 +189,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		texIds[2] = 1;
 	}
 
-	Mesh rMesh{ vertices, indices, texIds };
+	Mesh rMesh{ vertices, indices, texIds, tempProp, tempCols };
 	return rMesh;
 }
 
@@ -257,7 +247,10 @@ void Model::draw(Shader shader)
 
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
+		// Texture checking
 		unsigned int* meshTexIds = meshes[i].getTexIds();
+
+		// If Any textures are different, rebind all three
 		if (tBound.diff != meshTexIds[0] || tBound.spec != meshTexIds[1] || tBound.norm != meshTexIds[2])
 		{
 			glBindTextures(0, 3, meshTexIds);
@@ -269,6 +262,48 @@ void Model::draw(Shader shader)
 			//	<< "\n new spec id: " << meshes[i].texIds[1]
 			//	<< "\n new norm id: " << meshes[i].texIds[2]
 			//	<< std::endl;
+		}
+
+		// Material properties checking
+		MaterialProperties mProps = meshes[i].getMaterialProps();
+		if (matPropSet.shininess != mProps.shininess || matPropSet.opacity != mProps.opacity)
+		{
+			shader.setFloat("u_matProps.shininess", mProps.shininess);
+			shader.setFloat("u_matProps.opacity",   mProps.opacity);
+			matPropSet.shininess = mProps.shininess;
+			matPropSet.opacity	 = mProps.opacity;
+		}
+		
+		// Material colors checking
+		MaterialColors mCols = meshes[i].getMaterialCols();
+		if (matColSet.color_ambient != mCols.color_ambient)
+		{
+			shader.setVec3("u_matCols.ambient", mCols.color_ambient);
+			matColSet.color_ambient = mCols.color_ambient;
+		}
+
+		if (matColSet.color_diffuse != mCols.color_diffuse) 
+		{
+			shader.setVec3("u_matCols.diffuse", mCols.color_diffuse);
+			matColSet.color_diffuse = mCols.color_diffuse;
+		}
+
+		if (matColSet.color_specular != mCols.color_specular)
+		{
+			shader.setVec3("u_matCols.specular", mCols.color_specular);
+			matColSet.color_specular = mCols.color_specular;
+		}
+
+		if (matColSet.color_emissive != mCols.color_emissive)
+		{
+			shader.setVec3("u_matCols.emissive", mCols.color_emissive);
+			matColSet.color_emissive = mCols.color_emissive;
+		}
+
+		if (matColSet.color_transparent != mCols.color_transparent)
+		{
+			shader.setVec3("u_matCols.transparent", mCols.color_transparent);
+			matColSet.color_transparent = mCols.color_transparent;
 		}
 
 		glDrawElementsBaseVertex(GL_TRIANGLES, meshes[i].getIndicesCount(), GL_UNSIGNED_INT, (void*)meshes[i].getIndicesStart(), meshes[i].getBaseVertex());
@@ -364,4 +399,79 @@ unsigned int Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, st
 	}
 
 	return texId;
+}
+
+MaterialProperties Model::loadMaterialProperties(const aiMaterial* material)
+{
+	float shininess;
+	float opacity;
+
+	if (AI_SUCCESS != material->Get(AI_MATKEY_SHININESS, shininess))
+		std::cout << "Error collecting SHININESS" << std::endl;
+	else
+		std::cout << "Shininess: " << shininess << std::endl;
+
+	if (AI_SUCCESS != material->Get(AI_MATKEY_OPACITY, opacity))
+		std::cout << "Error collecting OPACITY" << std::endl;
+	else
+		std::cout << "Opacity: " << opacity << std::endl;
+
+	return { shininess, opacity };
+}
+
+MaterialColors Model::loadMaterialColors(const aiMaterial* material)
+{
+	aiColor3D color_ambient;
+	aiColor3D color_diffuse;
+	aiColor3D color_specular;
+	aiColor3D color_emissive;
+	aiColor3D color_transparent;
+
+	glm::vec3 ambient(0.0f);
+	glm::vec3 diffuse(0.0f);
+	glm::vec3 specular(0.0f);
+	glm::vec3 emissive(0.0f);
+	glm::vec3 transparent(0.0f);
+
+	if (AI_SUCCESS != material->Get(AI_MATKEY_COLOR_AMBIENT, color_ambient))
+		std::cout << "Error collecting COLOR_AMBIENT" << std::endl;
+	else
+	{
+		ambient = glm::vec3(color_ambient.r, color_ambient.b, color_ambient.g);
+		std::cout << "Color_ambient: (" << ambient.x << ', ' << ambient.y << ', ' << ambient.z << ')' << std::endl;
+	}
+
+	if (AI_SUCCESS != material->Get(AI_MATKEY_COLOR_DIFFUSE, color_diffuse))
+		std::cout << "Error collecting COLOR_DIFFUSE" << std::endl;
+	else
+	{
+		diffuse = glm::vec3(color_diffuse.r, color_diffuse.b, color_diffuse.g);
+		std::cout << "Color_diffuse: (" << diffuse.x << ', ' << diffuse.y << ', ' << diffuse.z << ')' << std::endl;
+	}
+
+	if (AI_SUCCESS != material->Get(AI_MATKEY_COLOR_SPECULAR, color_specular))
+		std::cout << "Error collecting COLOR_SPECULAR" << std::endl;
+	else
+	{
+		specular = glm::vec3(color_specular.r, color_specular.b, color_specular.g);
+		std::cout << "Color_specular: (" << specular.x << ', ' << specular.y << ', ' << specular.z << ')' << std::endl;
+	}
+
+	if (AI_SUCCESS != material->Get(AI_MATKEY_COLOR_EMISSIVE, color_emissive))
+		std::cout << "Error collecting COLOR_EMISSIVE" << std::endl;
+	else
+	{
+		emissive = glm::vec3(color_emissive.r, color_emissive.b, color_emissive.g);
+		std::cout << "Color_emissive: (" << emissive.x << ', ' << emissive.y << ', ' << emissive.z << ')' << std::endl;
+	}
+
+	if (AI_SUCCESS != material->Get(AI_MATKEY_COLOR_TRANSPARENT, color_transparent))
+		std::cout << "Error collecting COLOR_TRANSPARENT" << std::endl;
+	else
+	{
+		transparent = glm::vec3(color_transparent.r, color_transparent.b, color_transparent.g);
+		std::cout << "Color_transparent: (" << transparent.x << ', ' << transparent.y << ', ' << transparent.z << ')' << std::endl;
+	}
+
+	return { ambient, diffuse, specular, emissive, transparent };
 }
