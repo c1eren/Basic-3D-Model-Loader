@@ -26,7 +26,6 @@ struct TexturesBound {
 	unsigned int norm = 0;
 };
 
-
 class Model {
 public:
 	Model(std::string filePath, bool flipUVs = 1);
@@ -39,6 +38,8 @@ private:
 	std::vector<Mesh> meshes;
 	std::vector<Texture> texturesLoaded;
 	TexturesBound tBound;
+	MaterialProperties matPropSet;
+	MaterialColors matColSet;
 
 	Vao VAO;
 	Vbo VBO;
@@ -57,6 +58,9 @@ private:
 	void processNode(aiNode* node, const aiScene* scene);
 
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
+
+	MaterialProperties loadMaterialProperties(const aiMaterial *material);
+	MaterialColors loadMaterialColors(const aiMaterial* material);
 
 	unsigned int loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
 
