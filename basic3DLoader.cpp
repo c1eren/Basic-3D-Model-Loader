@@ -1,6 +1,7 @@
 // ConsoleApplication2.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 #define STB_IMAGE_IMPLEMENTATION
+#define NR_POINT_LIGHTS 1
 
 #include <iostream>
 #include <vector>
@@ -19,6 +20,7 @@
 #include "model.h"
 #include "camera.h"
 #include "constants.h"
+#include "skybox.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -26,6 +28,7 @@ void getFramerate();
 unsigned int textureFromFile(const char* str, std::string directory);
 
 int toggle = 0;
+bool skyboxDraw = 0;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 
@@ -63,7 +66,7 @@ int main()
     GLint nrAttributes;
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
     std::cout << "Maximum nr of vertex attributes supported: " << nrAttributes << std::endl;
-    
+
     int maxTextures = 0;
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextures);
     std::cout << "Max sampler2D units: " << maxTextures << std::endl;
@@ -94,11 +97,72 @@ int main()
 
     std::cout << "                                                            Total model load time: " << finish - start << std::endl;
 
+    // Cubemap faces
+    std::vector<std::string> bigBlue_faces = {
+        "skybox/skybox/right.jpg",
+        "skybox/skybox/left.jpg",
+        "skybox/skybox/top.jpg",
+        "skybox/skybox/bottom.jpg",
+        "skybox/skybox/front.jpg",
+        "skybox/skybox/back.jpg"
+    };
+
+    std::vector<std::string> milkyway_faces = {
+        "skybox/milkyway/right.png",
+        "skybox/milkyway/left.png",
+        "skybox/milkyway/top.png",
+        "skybox/milkyway/bottom.png",
+        "skybox/milkyway/front.png",
+        "skybox/milkyway/back.png"
+    };
+
+    // Skybox
+    Skybox skybox(bigBlue_faces);
+    //Skybox skybox(milkyway_faces);
+
     // Shader
-    Shader shader("shaders/basic.vs", "shaders/basic.fs");
+    Shader shaders[2];
+    Shader shader("shaders/modelShader.vs", "shaders/modelShader.fs");
+    Shader skyboxShader("shaders/cubeMap.vs", "shaders/cubeMap.fs");
+    shaders[0] = shader;
+    shaders[1] = skyboxShader;
 
     glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)viewport_width / (float)viewport_height, 0.1f, 200.0f);
-    shader.setMat4("projection", projection);
+    for (unsigned int i = 0; i < (sizeof(shaders) / sizeof(shaders[0])); i++)
+    {
+        shaders[i].setMat4("projection", projection);
+    }
+
+    for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
+    {
+        std::string strA = "u_lightSource[";
+        std::string strB = "].position";
+        std::string strC = "].attenuation";
+        std::string strD = "].ambient";
+        std::string strE = "].diffuse";
+        std::string strF = "].specular";
+        std::string num = std::to_string(i);
+
+        std::string pLPos = strA + num + strB;
+        std::string pLAtt = strA + num + strC;
+        std::string pLAmb = strA + num + strD;
+        std::string pLDif = strA + num + strE;
+        std::string pLSpe = strA + num + strF;
+
+        glm::vec3 pLPosition(i, 0.0f, 0.4f);
+        glm::vec3 pLAttenuation(1.0f, 0.14f, 0.07f);
+        glm::vec3 pLAmbient(0.2f);
+        glm::vec3 pLDiffuse(1.0f);
+        glm::vec3 pLSpecular(1.0f);
+
+        shader.setVec3(pLPos.c_str(), pLPosition);
+        shader.setVec3(pLAtt.c_str(), pLAttenuation);
+        shader.setVec3(pLAmb.c_str(), pLAmbient);
+        shader.setVec3(pLDif.c_str(), pLDiffuse);
+        shader.setVec3(pLSpe.c_str(), pLSpecular);
+    }
+
+    //skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));
 
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_FRAMEBUFFER_SRGB);
@@ -109,16 +173,28 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
-        glClearColor(0.4, 0.75, 0.60, 1.0);
+        //glClearColor(0.4, 0.75, 0.60, 1.0);
+        glClearColor(0.0, 0.0, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 view = camera.getViewMatrix();
-        shader.setMat4("view", view);
-
+        if (camera.hasMoved)
+        {
+            glm::mat4 view = camera.getViewMatrix();
+            shader.setMat4("view", view);
+            skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));    // Eliminating translation factor from mat4
+        }
         glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, glm::radians(float(currentFrame) * 20), glm::vec3(0.0f, 1.0f, 0.0f));
         shader.setMat4("model", model);
+        glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
+        shader.setMat3("normalMatrix", normalMatrix);
 
         modelLoaded.draw(shader);
+
+        if (skyboxDraw)
+        {
+            skybox.draw(skyboxShader);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -128,9 +204,9 @@ int main()
         getFramerate(); // Important, also gets delta for camera, TODO separate this logic
     }
 
-/*#####################################################################################################################################################*/
-    // RENDER LOOP
-/*#####################################################################################################################################################*/
+    /*#####################################################################################################################################################*/
+        // RENDER LOOP
+    /*#####################################################################################################################################################*/
 
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -181,6 +257,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     {
         camera.processKeyPress(Direction::DOWN);
     }
+    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
+    {
+        if (skyboxDraw)
+            skyboxDraw = 0;
+        else
+            skyboxDraw = 1;
+    }
+
 
     /*
         void keyCallback (GLFWwindow\* wind, int key, int scancode, int action, int mods) {
