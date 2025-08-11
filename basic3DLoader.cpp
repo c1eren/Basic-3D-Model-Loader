@@ -21,6 +21,7 @@
 #include "camera.h"
 #include "constants.h"
 #include "skybox.h"
+#include "sphere.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -164,6 +165,9 @@ int main()
 
     //skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));
 
+    // Generate a sphere
+    Sphere sphere(20, 20);
+
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_FRAMEBUFFER_SRGB);
 
@@ -195,6 +199,8 @@ int main()
         {
             skybox.draw(skyboxShader);
         }
+
+        sphere.draw();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -264,7 +270,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         else
             skyboxDraw = 1;
     }
-
 
     /*
         void keyCallback (GLFWwindow\* wind, int key, int scancode, int action, int mods) {

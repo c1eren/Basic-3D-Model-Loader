@@ -154,6 +154,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="skybox.cpp" />
+    <ClCompile Include="sphere.cpp" />
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="vao.cpp" />
     <ClCompile Include="vbo.cpp" />
@@ -165,12 +166,12 @@
   <ItemGroup>
     <ClInclude Include="camera.h" />
     <ClInclude Include="constants.h" />
-    <ClInclude Include="cube.h" />
     <ClInclude Include="ebo.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="skybox.h" />
+    <ClInclude Include="sphere.h" />
     <ClInclude Include="vao.h" />
     <ClInclude Include="vbo.h" />
   </ItemGroup>

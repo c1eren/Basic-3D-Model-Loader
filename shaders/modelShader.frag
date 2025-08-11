@@ -4,9 +4,11 @@
 
 out vec4 FragColor;
 
-in vec2 TexCoords;
-in vec3 Normal;
-in vec3 FragPos;
+in VS_FS {
+	vec2 TexCoords;
+	vec3 Normal;
+	vec3 FragPos;
+} from_vs;
 
 struct MaterialProperties {
 	float shininess;
@@ -43,18 +45,18 @@ vec3 calcPointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir, 
 
 void main()
 {
-	vec3 norm = normalize(Normal);
-	vec3 viewDir = normalize(u_cameraViewPos - FragPos);
+	vec3 norm = normalize(from_vs.Normal);
+	vec3 viewDir = normalize(u_cameraViewPos - from_vs.FragPos);
 
-	vec3 diffTex = vec3(texture(u_texture_diffuse, TexCoords));
-	vec3 specTex = vec3(texture(u_texture_specular, TexCoords));
-	vec3 normTex = vec3(texture(u_texture_normal, TexCoords));
+	vec3 diffTex = vec3(texture(u_texture_diffuse, from_vs.TexCoords));
+	vec3 specTex = vec3(texture(u_texture_specular, from_vs.TexCoords));
+	vec3 normTex = vec3(texture(u_texture_normal, from_vs.TexCoords));
 
 	vec3 final = vec3(0.0); // Check transparency if shader fails
 
 	for (int i = 0; i < NR_POINT_LIGHTS; i++)
 	{
-		final += calcPointLight(u_lightSource[i], norm, FragPos, viewDir, diffTex, specTex, u_matProps.shininess);
+		final += calcPointLight(u_lightSource[i], norm, from_vs.FragPos, viewDir, diffTex, specTex, u_matProps.shininess);
 	}
 
 	FragColor = vec4(final, 1.0);
