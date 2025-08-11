@@ -24,7 +24,7 @@
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void getFramerate();
+void getFramerate(GLFWwindow* window);
 unsigned int textureFromFile(const char* str, std::string directory);
 
 int toggle = 0;
@@ -44,7 +44,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "2D Renderer", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Model Loader 3D Basic 2025", nullptr, nullptr);
     if (window == NULL)
     {
         std::cout << "Window create fail!" << std::endl;
@@ -87,8 +87,8 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    Model modelLoaded("models/backpack/backpack.obj", 0);
-    //Model modelLoaded("models/planet/planet.obj");
+    //Model modelLoaded("models/backpack/backpack.obj", 0);
+    Model modelLoaded("models/planet/planet.obj");
     //Model modelLoaded("models/Tree1/Tree1.obj");
     //Model modelLoaded("models/abandonedHouse/cottage_obj.obj");
     //Model modelLoaded("models/53-cottage_fbx/cottage_fbx.fbx");
@@ -117,13 +117,13 @@ int main()
     };
 
     // Skybox
-    Skybox skybox(bigBlue_faces);
-    //Skybox skybox(milkyway_faces);
+    //Skybox skybox(bigBlue_faces);
+    Skybox skybox(milkyway_faces);
 
     // Shader
     Shader shaders[2];
-    Shader shader("shaders/modelShader.vs", "shaders/modelShader.fs");
-    Shader skyboxShader("shaders/cubeMap.vs", "shaders/cubeMap.fs");
+    Shader shader("shaders/modelShader.vert", "shaders/modelShader.frag");
+    Shader skyboxShader("shaders/cubeMap.vert", "shaders/cubeMap.frag");
     shaders[0] = shader;
     shaders[1] = skyboxShader;
 
@@ -201,7 +201,7 @@ int main()
 
         //------------------------------------------------
 
-        getFramerate(); // Important, also gets delta for camera, TODO separate this logic
+        getFramerate(window); // Important, also gets delta for camera, TODO separate this logic
     }
 
     /*#####################################################################################################################################################*/
@@ -289,7 +289,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     camera.updateEulerValues(xoffset, yoffset);
 }
 
-void getFramerate()
+void getFramerate(GLFWwindow *window)
 {
     // Get Framerate
     currentFrame = glfwGetTime();           // get current time 
@@ -303,7 +303,10 @@ void getFramerate()
     if (currentFrame - previousTime >= 1.0)
     {
         // Display the frame count here any way you want.
-        std::cout << "                                                                  FPS: " << frameCount << std::endl; // 17 tabs across
+        //std::cout << "                                                                  FPS: " << frameCount << std::endl; // 17 tabs across
+        std::string str = "Fps: " + std::to_string(frameCount);
+        const char* title = str.c_str();
+        glfwSetWindowTitle(window, title);
 
         frameCount = 0;
         previousTime = currentFrame;

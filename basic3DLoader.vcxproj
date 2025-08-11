@@ -157,10 +157,10 @@
     <ClCompile Include="src\glad.c" />
     <ClCompile Include="vao.cpp" />
     <ClCompile Include="vbo.cpp" />
-    <None Include="shaders\cubeMap.fs" />
-    <None Include="shaders\cubeMap.vs" />
-    <None Include="shaders\modelShader.fs" />
-    <None Include="shaders\modelShader.vs" />
+    <None Include="shaders\cubeMap.frag" />
+    <None Include="shaders\cubeMap.vert" />
+    <None Include="shaders\modelShader.frag" />
+    <None Include="shaders\modelShader.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
@@ -175,8 +175,8 @@
     <ClInclude Include="vbo.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shaders\basic.fs" />
-    <None Include="shaders\basic.vs" />
+    <None Include="shaders\basic.frag" />
+    <None Include="shaders\basic.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\defaultTex_diffuse.png">
