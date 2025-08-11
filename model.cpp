@@ -1,15 +1,14 @@
-#include "model.h"
 #include <glad/glad.h>
-#include "stb_image.h"
-
-#include <GLFW/glfw3.h>
-
 #include <iostream>
+
+#include "model.h"
+#include "stb_image.h"
 
 unsigned int textureFromFile(const char* str, std::string directory);
 
 Model::Model(std::string filePath, bool flipUVs)
 {
+	manager = new(ModelManager);
 	this->flipUVs = flipUVs;
 	texturesLoaded.push_back(Texture{ textureFromFile("defaultTex_diffuse.png", "textures"), "texture_diffuse", "textures/defaultTex_diffuse.png" });
 
@@ -306,6 +305,8 @@ void Model::draw(Shader shader)
 			matColSet.color_transparent = mCols.color_transparent;
 		}
 
+		shader.setMat4("model", manager->getModelMatrix());
+		shader.setMat3("normalMatrix", manager->getNormalMatrix());
 		glDrawElementsBaseVertex(GL_TRIANGLES, meshes[i].getIndicesCount(), GL_UNSIGNED_INT, (void*)meshes[i].getIndicesStart(), meshes[i].getBaseVertex());
 	}
 }

@@ -1,7 +1,6 @@
 // ConsoleApplication2.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 #define STB_IMAGE_IMPLEMENTATION
-#define NR_POINT_LIGHTS 3
 
 #include <iostream>
 #include <vector>
@@ -22,14 +21,22 @@
 #include "constants.h"
 #include "skybox.h"
 #include "sphere.h"
+#include "modelManager.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+
 void getFramerate(GLFWwindow* window);
 unsigned int textureFromFile(const char* str, std::string directory);
 
 int toggle = 0;
 bool skyboxDraw = 0;
+
+float cursorX = 0.0f;
+float cursorY = 0.0f;
+float lastX = 400;
+float lastY = 300;
+int cameraFrozen = 0;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 
@@ -160,7 +167,7 @@ int main()
     glm::vec3 pLDiffuse(1.0f, 0.5f, 0.5f);
     glm::vec3 pLSpecular(1.0f);
 
-    for (unsigned int i = 0; i < PS; i++)
+    for (unsigned int i = 0; i < 5; i++)
     {
         std::string strA = "u_lightSource[";
         std::string strB = "].position";
@@ -209,12 +216,13 @@ int main()
             lightShader.setMat4("view", view);
             skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));    // Eliminating translation factor from mat4
         }
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, glm::radians(float(currentFrame) * 20), glm::vec3(0.0f, 1.0f, 0.0f));
-        shader.setMat4("model", model);
-        glm::mat3 normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-        shader.setMat3("normalMatrix", normalMatrix);
+        
+        if (modelLoaded.manager->getMouseButtonState())
+        {
+            modelLoaded.manager->setModelMatrix(glm::rotate(modelLoaded.manager->getModelMatrix(), glm::radians(float(cursorX * 0.5)), glm::vec3(0.0f, 1.0f, 0.0f)));
+        }
 
+        modelLoaded.manager->setNormallMatrix(glm::mat3(glm::transpose(glm::inverse(modelLoaded.manager->getModelMatrix()))));
         modelLoaded.draw(shader);
 
         if (skyboxDraw)
@@ -222,15 +230,21 @@ int main()
             skybox.draw(skyboxShader);
         }
 
-        for (unsigned int i = 0; i < PS; i++)
+        for (unsigned int i = 0; i < 5; i++)
         {
-            model = glm::mat4(1.0f);
+            glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, pLPosition[i] * pLPosition[i]);
             lightShader.setMat4("model", model);
             sphere.draw(lightShader);
         }
 
+        //modelLoaded.manager->setModelMatrix(glm::mat4(1.0f));
+
         glfwSwapBuffers(window);
+
+        modelLoaded.manager->setMouseButtonState(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
+        cameraFrozen = modelLoaded.manager->getMouseButtonState();
+
         glfwPollEvents();
 
         //------------------------------------------------
@@ -267,30 +281,34 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 
     // Camera
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+    if (!cameraFrozen)
     {
-        camera.processKeyPress(Direction::FORWARD);
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        {
+            camera.processKeyPress(Direction::FORWARD);
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        {
+            camera.processKeyPress(Direction::BACKWARD);
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        {
+            camera.processKeyPress(Direction::LEFT);
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        {
+            camera.processKeyPress(Direction::RIGHT);
+        }
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        {
+            camera.processKeyPress(Direction::UP);
+        }
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        {
+            camera.processKeyPress(Direction::DOWN);
+        }
     }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    {
-        camera.processKeyPress(Direction::BACKWARD);
-    }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    {
-        camera.processKeyPress(Direction::LEFT);
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    {
-        camera.processKeyPress(Direction::RIGHT);
-    }
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-    {
-        camera.processKeyPress(Direction::UP);
-    }
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-    {
-        camera.processKeyPress(Direction::DOWN);
-    }
+
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
     {
         if (skyboxDraw)
@@ -308,18 +326,33 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    if (camera.firstMouse)
-    {
-        camera.lastX = xpos;
-        camera.lastY = ypos;
-        camera.firstMouse = 0;
-    }
+    float xoffset = xpos - lastX;           // This frames x-coord, minus the last frames x-coord
+    float yoffset = lastY - ypos;           // reversed: y ranges bottom to top
+    lastX = xpos;
+    lastY = ypos;
 
-    float xoffset = xpos - camera.lastX;           // This frames x-coord, minus the last frames x-coord
-    float yoffset = camera.lastY - ypos;           // reversed: y ranges bottom to top
-    camera.lastX = xpos;
-    camera.lastY = ypos;
-    camera.updateEulerValues(xoffset, yoffset);
+    // TODO fix camera 
+    if (!cameraFrozen)
+    {
+        if (camera.firstMouse)
+        {
+            lastX = xpos;
+            lastY = ypos;
+            camera.firstMouse = 0;
+        }
+
+        xoffset = xpos - lastX;
+        yoffset = lastY - ypos;
+        lastX = xpos;
+        lastY = ypos;
+        camera.setLastXY(lastX, lastY);
+        camera.updateEulerValues(xoffset, yoffset);
+    }
+    else
+    {
+        cursorX = xoffset;
+        cursorY = yoffset;
+    }
 }
 
 void getFramerate(GLFWwindow *window)

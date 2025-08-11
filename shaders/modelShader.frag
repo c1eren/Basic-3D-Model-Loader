@@ -1,5 +1,5 @@
 #version 460 core
-#define NR_POINT_LIGHTS 14
+#define NR_POINT_LIGHTS 5
 out vec4 FragColor;
 
 in VS_FS {

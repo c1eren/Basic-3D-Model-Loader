@@ -8,8 +8,8 @@
 #include "vbo.h"
 #include "ebo.h"
 #include "shader.h"
+#include "modelManager.h"
 
-#include <glm/glm.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -33,6 +33,9 @@ public:
 
 	// Render
 	void draw(Shader shader);
+
+public:
+	ModelManager *manager;
 
 private:
 	std::vector<Mesh> meshes;

@@ -1,6 +1,5 @@
-#include "sphere.h"
-
 #include <glad/glad.h>
+#include "sphere.h"
 #include <glm/glm.hpp>
 
 

@@ -69,6 +69,8 @@ public:
 
 	glm::mat4 lookAT();
 
+	void setLastXY(float x, float y) { lastX = x; lastY = y; }
+
 };
 
 
