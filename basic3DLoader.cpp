@@ -1,7 +1,7 @@
 // ConsoleApplication2.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 #define STB_IMAGE_IMPLEMENTATION
-#define NR_POINT_LIGHTS 1
+#define NR_POINT_LIGHTS 3
 
 #include <iostream>
 #include <vector>
@@ -88,8 +88,8 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    //Model modelLoaded("models/backpack/backpack.obj", 0);
-    Model modelLoaded("models/planet/planet.obj");
+    Model modelLoaded("models/backpack/backpack.obj", 0);
+    //Model modelLoaded("models/planet/planet.obj");
     //Model modelLoaded("models/Tree1/Tree1.obj");
     //Model modelLoaded("models/abandonedHouse/cottage_obj.obj");
     //Model modelLoaded("models/53-cottage_fbx/cottage_fbx.fbx");
@@ -122,11 +122,13 @@ int main()
     Skybox skybox(milkyway_faces);
 
     // Shader
-    Shader shaders[2];
+    Shader shaders[3];
     Shader shader("shaders/modelShader.vert", "shaders/modelShader.frag");
     Shader skyboxShader("shaders/cubeMap.vert", "shaders/cubeMap.frag");
+    Shader lightShader("shaders/lightShader.vert", "shaders/lightShader.frag");
     shaders[0] = shader;
     shaders[1] = skyboxShader;
+    shaders[2] = lightShader;
 
     glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)viewport_width / (float)viewport_height, 0.1f, 200.0f);
     for (unsigned int i = 0; i < (sizeof(shaders) / sizeof(shaders[0])); i++)
@@ -134,7 +136,31 @@ int main()
         shaders[i].setMat4("projection", projection);
     }
 
-    for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
+    const unsigned int PS = 14;
+    glm::vec3 pLPosition[PS] = {
+        glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 2.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 0.0f),
+        glm::vec3(1.0f, 0.0f, 1.0f),
+        glm::vec3(0.0f, 1.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        glm::vec3(0.9f, 0.5f, 0.3f),
+        glm::vec3(0.5f, 0.5f, 0.5f),
+        glm::vec3(0.3f, 0.6f, 0.9f),
+        glm::vec3(0.4f, 0.8f, 0.4f),
+        glm::vec3(0.3f, 0.3f, 1.0f),
+        glm::vec3(1.0f, 0.5f, 0.8f),
+        glm::vec3(0.5f, 0.9f, 0.2f),
+    };
+
+    // Point lights
+    glm::vec3 pLAttenuation(1.0f, 0.14f, 0.07f);
+    glm::vec3 pLAmbient(0.2f);
+    glm::vec3 pLDiffuse(1.0f, 0.5f, 0.5f);
+    glm::vec3 pLSpecular(1.0f);
+
+    for (unsigned int i = 0; i < PS; i++)
     {
         std::string strA = "u_lightSource[";
         std::string strB = "].position";
@@ -150,23 +176,18 @@ int main()
         std::string pLDif = strA + num + strE;
         std::string pLSpe = strA + num + strF;
 
-        glm::vec3 pLPosition(i, 0.0f, 0.4f);
-        glm::vec3 pLAttenuation(1.0f, 0.14f, 0.07f);
-        glm::vec3 pLAmbient(0.2f);
-        glm::vec3 pLDiffuse(1.0f);
-        glm::vec3 pLSpecular(1.0f);
-
-        shader.setVec3(pLPos.c_str(), pLPosition);
+        shader.setVec3(pLPos.c_str(), pLPosition[i]);
         shader.setVec3(pLAtt.c_str(), pLAttenuation);
         shader.setVec3(pLAmb.c_str(), pLAmbient);
         shader.setVec3(pLDif.c_str(), pLDiffuse);
         shader.setVec3(pLSpe.c_str(), pLSpecular);
     }
+    lightShader.setVec3("u_lightColor", pLDiffuse);
 
     //skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));
 
     // Generate a sphere
-    Sphere sphere(20, 20);
+    Sphere sphere(100, 100, 0.1);
 
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_FRAMEBUFFER_SRGB);
@@ -185,6 +206,7 @@ int main()
         {
             glm::mat4 view = camera.getViewMatrix();
             shader.setMat4("view", view);
+            lightShader.setMat4("view", view);
             skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));    // Eliminating translation factor from mat4
         }
         glm::mat4 model = glm::mat4(1.0f);
@@ -200,7 +222,13 @@ int main()
             skybox.draw(skyboxShader);
         }
 
-        sphere.draw();
+        for (unsigned int i = 0; i < PS; i++)
+        {
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, pLPosition[i] * pLPosition[i]);
+            lightShader.setMat4("model", model);
+            sphere.draw(lightShader);
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();

@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 
 
-Sphere::Sphere(unsigned int stacks, unsigned int slices)
+Sphere::Sphere(unsigned int stacks, unsigned int slices, float factor)
 {
 	for (unsigned int i = 0; i <= stacks; i++)
 	{
@@ -22,9 +22,9 @@ Sphere::Sphere(unsigned int stacks, unsigned int slices)
             float y = cos(phi);
             float z = sin(theta) * sin(phi);
 
-            positions.push_back(x);
-            positions.push_back(y);
-            positions.push_back(z);
+            positions.push_back(x * factor);
+            positions.push_back(y * factor);
+            positions.push_back(z * factor);
         }
     }
 
@@ -56,8 +56,9 @@ Sphere::Sphere(unsigned int stacks, unsigned int slices)
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (void*)0);
 }
 
-void Sphere::draw()
+void Sphere::draw(Shader shader) const
 {
+    shader.use();
     glBindVertexArray(sphereVAO);
     glDrawElements(GL_TRIANGLES, sphereIndexCount, GL_UNSIGNED_INT, 0);
 }

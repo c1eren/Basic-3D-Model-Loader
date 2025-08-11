@@ -160,6 +160,8 @@
     <ClCompile Include="vbo.cpp" />
     <None Include="shaders\cubeMap.frag" />
     <None Include="shaders\cubeMap.vert" />
+    <None Include="shaders\lightShader.frag" />
+    <None Include="shaders\lightShader.vert" />
     <None Include="shaders\modelShader.frag" />
     <None Include="shaders\modelShader.vert" />
   </ItemGroup>

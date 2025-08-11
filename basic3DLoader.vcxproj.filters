@@ -94,6 +94,8 @@
     <None Include="shaders\cubeMap.vert" />
     <None Include="shaders\modelShader.vert" />
     <None Include="shaders\modelShader.frag" />
+    <None Include="shaders\lightShader.vert" />
+    <None Include="shaders\lightShader.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\defaultTex_diffuse.png">
