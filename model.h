@@ -20,11 +20,6 @@ struct Texture {
 	std::string path;
 };
 
-struct TexturesBound {
-	unsigned int diff = 0;
-	unsigned int spec = 0;
-	unsigned int norm = 0;
-};
 
 class Model {
 public:
@@ -40,9 +35,6 @@ public:
 private:
 	std::vector<Mesh> meshes;
 	std::vector<Texture> texturesLoaded;
-	TexturesBound tBound;
-	MaterialProperties matPropSet;
-	MaterialColors matColSet;
 
 	Vao VAO;
 	Vbo VBO;
