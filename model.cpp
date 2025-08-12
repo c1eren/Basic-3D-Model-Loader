@@ -201,17 +201,17 @@ void Model::sendDataToBuffers()
 	std::vector<unsigned int> iData;
 	iData.reserve(indicesCount);
 
-	unsigned int vertexOffset = 0;
+	unsigned int vertexOffset  = 0;
 	unsigned int indicesOffset = 0;
 
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
-		std::vector<Vertex> meshVertices = meshes[i].getVertices();
+		std::vector<Vertex> meshVertices      = meshes[i].getVertices();
 		std::vector<unsigned int> meshIndices = meshes[i].getIndices();
 
 		// Flattening multiple meshes' vertices into a single vertex buffer.
 		vData.insert(vData.end(), meshVertices.begin(), meshVertices.end());
-		iData.insert(iData.end(), meshIndices.begin(),meshIndices.end());
+		iData.insert(iData.end(), meshIndices.begin(),  meshIndices.end());
 
 		TrackIndices tInd{ indicesOffset * sizeof(unsigned int),
 							meshIndices.size(),
@@ -219,7 +219,7 @@ void Model::sendDataToBuffers()
 		meshes[i].setTrackIndices(tInd);
 
 		indicesOffset += meshIndices.size();
-		vertexOffset +=meshVertices.size();
+		vertexOffset  += meshVertices.size();
 	}
 
 	// Sending data to GPU
@@ -248,23 +248,20 @@ void Model::draw(Shader shader)
 	{
 		// Texture checking
 		unsigned int* meshTexIds = meshes[i].getTexIds();
+		TexturesBound tBound	 = manager->getTexturesBound();
 
 		// If Any textures are different, rebind all three
 		if (tBound.diff != meshTexIds[0] || tBound.spec != meshTexIds[1] || tBound.norm != meshTexIds[2])
 		{
 			glBindTextures(0, 3, meshTexIds);
-
-			//tBound.diff = meshes[i].texIds[0];
-			//tBound.spec = meshes[i].texIds[1];
-			//tBound.norm = meshes[i].texIds[2];
-			//std::cout << "new diff id: " << meshes[i].texIds[0]
-			//	<< "\n new spec id: " << meshes[i].texIds[1]
-			//	<< "\n new norm id: " << meshes[i].texIds[2]
-			//	<< std::endl;
 		}
 
 		// Material properties checking
-		MaterialProperties mProps = meshes[i].getMaterialProps();
+		MaterialProperties mProps	  = meshes[i].getMaterialProps();
+		MaterialColors mCols		  = meshes[i].getMaterialCols();
+		MaterialProperties matPropSet = manager->getMatPropSet();
+		MaterialColors matColSet	  = manager->getMatColSet();
+
 		if (matPropSet.shininess != mProps.shininess || matPropSet.opacity != mProps.opacity)
 		{
 			shader.setFloat("u_matProps.shininess", mProps.shininess);
@@ -274,7 +271,6 @@ void Model::draw(Shader shader)
 		}
 		
 		// Material colors checking
-		MaterialColors mCols = meshes[i].getMaterialCols();
 		if (matColSet.color_ambient != mCols.color_ambient)
 		{
 			shader.setVec3("u_matCols.ambient", mCols.color_ambient);
@@ -305,8 +301,15 @@ void Model::draw(Shader shader)
 			matColSet.color_transparent = mCols.color_transparent;
 		}
 
-		shader.setMat4("model", manager->getModelMatrix());
-		shader.setMat3("normalMatrix", manager->getNormalMatrix());
+		manager->setMatPropSet(matPropSet);
+		manager->setMatColSet(matColSet);
+
+		if (manager->getHasMoved())
+		{
+			shader.setMat4("model", manager->getModelMatrix());
+			shader.setMat3("normalMatrix", manager->getNormalMatrix());
+		}
+
 		glDrawElementsBaseVertex(GL_TRIANGLES, meshes[i].getIndicesCount(), GL_UNSIGNED_INT, (void*)meshes[i].getIndicesStart(), meshes[i].getBaseVertex());
 	}
 }
@@ -409,13 +412,9 @@ MaterialProperties Model::loadMaterialProperties(const aiMaterial* material)
 
 	if (AI_SUCCESS != material->Get(AI_MATKEY_SHININESS, shininess))
 		std::cout << "Error collecting SHININESS" << std::endl;
-	else
-		std::cout << "Shininess: " << shininess << std::endl;
 
 	if (AI_SUCCESS != material->Get(AI_MATKEY_OPACITY, opacity))
 		std::cout << "Error collecting OPACITY" << std::endl;
-	else
-		std::cout << "Opacity: " << opacity << std::endl;
 
 	return { shininess, opacity };
 }
@@ -437,42 +436,27 @@ MaterialColors Model::loadMaterialColors(const aiMaterial* material)
 	if (AI_SUCCESS != material->Get(AI_MATKEY_COLOR_AMBIENT, color_ambient))
 		std::cout << "Error collecting COLOR_AMBIENT" << std::endl;
 	else
-	{
 		ambient = glm::vec3(color_ambient.r, color_ambient.b, color_ambient.g);
-		std::cout << "Color_ambient: (" << ambient.x << ', ' << ambient.y << ', ' << ambient.z << ')' << std::endl;
-	}
 
 	if (AI_SUCCESS != material->Get(AI_MATKEY_COLOR_DIFFUSE, color_diffuse))
 		std::cout << "Error collecting COLOR_DIFFUSE" << std::endl;
 	else
-	{
 		diffuse = glm::vec3(color_diffuse.r, color_diffuse.b, color_diffuse.g);
-		std::cout << "Color_diffuse: (" << diffuse.x << ', ' << diffuse.y << ', ' << diffuse.z << ')' << std::endl;
-	}
 
 	if (AI_SUCCESS != material->Get(AI_MATKEY_COLOR_SPECULAR, color_specular))
 		std::cout << "Error collecting COLOR_SPECULAR" << std::endl;
 	else
-	{
 		specular = glm::vec3(color_specular.r, color_specular.b, color_specular.g);
-		std::cout << "Color_specular: (" << specular.x << ', ' << specular.y << ', ' << specular.z << ')' << std::endl;
-	}
 
 	if (AI_SUCCESS != material->Get(AI_MATKEY_COLOR_EMISSIVE, color_emissive))
 		std::cout << "Error collecting COLOR_EMISSIVE" << std::endl;
 	else
-	{
 		emissive = glm::vec3(color_emissive.r, color_emissive.b, color_emissive.g);
-		std::cout << "Color_emissive: (" << emissive.x << ', ' << emissive.y << ', ' << emissive.z << ')' << std::endl;
-	}
 
 	if (AI_SUCCESS != material->Get(AI_MATKEY_COLOR_TRANSPARENT, color_transparent))
 		std::cout << "Error collecting COLOR_TRANSPARENT" << std::endl;
 	else
-	{
 		transparent = glm::vec3(color_transparent.r, color_transparent.b, color_transparent.g);
-		std::cout << "Color_transparent: (" << transparent.x << ', ' << transparent.y << ', ' << transparent.z << ')' << std::endl;
-	}
 
 	return { ambient, diffuse, specular, emissive, transparent };
 }

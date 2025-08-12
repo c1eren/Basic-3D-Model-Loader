@@ -32,11 +32,13 @@ unsigned int textureFromFile(const char* str, std::string directory);
 int toggle = 0;
 bool skyboxDraw = 0;
 
-float cursorX = 0.0f;
-float cursorY = 0.0f;
-float lastX = 400;
-float lastY = 300;
-int cameraFrozen = 0;
+int mouseLeft = 0;
+double lastX = 400;
+double lastY = 300;
+float xOffset = 0.0f;
+float yOffset = 0.0f;
+float velocity = 0.0f;
+float rSensitivity = 0.1f;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 
@@ -95,10 +97,10 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    Model modelLoaded("models/backpack/backpack.obj", 0);
+    //Model modelLoaded("models/backpack/backpack.obj", 0);
     //Model modelLoaded("models/planet/planet.obj");
     //Model modelLoaded("models/Tree1/Tree1.obj");
-    //Model modelLoaded("models/abandonedHouse/cottage_obj.obj");
+    Model modelLoaded("models/abandonedHouse/cottage_obj.obj");
     //Model modelLoaded("models/53-cottage_fbx/cottage_fbx.fbx");
 
     float finish = glfwGetTime();
@@ -125,8 +127,8 @@ int main()
     };
 
     // Skybox
-    //Skybox skybox(bigBlue_faces);
-    Skybox skybox(milkyway_faces);
+    Skybox skybox(bigBlue_faces);
+    //Skybox skybox(milkyway_faces);
 
     // Shader
     Shader shaders[3];
@@ -219,11 +221,14 @@ int main()
         
         if (modelLoaded.manager->getMouseButtonState())
         {
-            modelLoaded.manager->setModelMatrix(glm::rotate(modelLoaded.manager->getModelMatrix(), glm::radians(float(cursorX * 0.5)), glm::vec3(0.0f, 1.0f, 0.0f)));
+            modelLoaded.manager->setModelMatrix(glm::rotate(modelLoaded.manager->getModelMatrix(), glm::radians(velocity), glm::vec3(0.0f, 1.0f, 0.0f)));
+            modelLoaded.manager->setNormallMatrix(glm::mat3(glm::transpose(glm::inverse(modelLoaded.manager->getModelMatrix()))));
+            modelLoaded.manager->setHasMoved(1);
+            velocity = 0.0f;
         }
 
-        modelLoaded.manager->setNormallMatrix(glm::mat3(glm::transpose(glm::inverse(modelLoaded.manager->getModelMatrix()))));
         modelLoaded.draw(shader);
+        modelLoaded.manager->setHasMoved(0);
 
         if (skyboxDraw)
         {
@@ -242,9 +247,8 @@ int main()
 
         glfwSwapBuffers(window);
 
-        modelLoaded.manager->setMouseButtonState(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
-        cameraFrozen = modelLoaded.manager->getMouseButtonState();
-
+        mouseLeft = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
+        modelLoaded.manager->setMouseButtonState(mouseLeft);
         glfwPollEvents();
 
         //------------------------------------------------
@@ -281,7 +285,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 
     // Camera
-    if (!cameraFrozen)
+    if (!mouseLeft)
     {
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         {
@@ -326,33 +330,29 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    float xoffset = xpos - lastX;           // This frames x-coord, minus the last frames x-coord
-    float yoffset = lastY - ypos;           // reversed: y ranges bottom to top
-    lastX = xpos;
-    lastY = ypos;
+    xOffset = xpos - lastX;
+    yOffset = lastY - ypos;
 
     // TODO fix camera 
-    if (!cameraFrozen)
+    if (!mouseLeft)
     {
         if (camera.firstMouse)
         {
-            lastX = xpos;
-            lastY = ypos;
+            camera.lastX = xpos;
+            camera.lastY = ypos;
             camera.firstMouse = 0;
         }
-
-        xoffset = xpos - lastX;
-        yoffset = lastY - ypos;
-        lastX = xpos;
-        lastY = ypos;
-        camera.setLastXY(lastX, lastY);
-        camera.updateEulerValues(xoffset, yoffset);
+        camera.updateEulerValues(xOffset, yOffset);
     }
     else
     {
-        cursorX = xoffset;
-        cursorY = yoffset;
+        velocity = xOffset * rSensitivity;
     }
+
+    lastX = xpos;
+    lastY = ypos;
+    camera.lastX = xpos;
+    camera.lastY = ypos;
 }
 
 void getFramerate(GLFWwindow *window)
