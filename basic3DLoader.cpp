@@ -228,6 +228,7 @@ int main()
         }
 
         modelLoaded.draw(shader);
+        modelLoaded.manager->setHasMoved(0);
 
         if (skyboxDraw)
         {
