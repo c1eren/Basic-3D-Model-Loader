@@ -2,35 +2,14 @@
 
 #include <GLFW/glfw3.h>
 
-#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-// Defaults
-const float yaw			= -90.0f;
-const float pitch		= 0.0f;
-const float speed		= 200.0f;
-const float sensitivity = 0.1f;
-const float zoom		= 45.0f;
-const float maxSpeed	= 200.0f;
-const float accelRate	= 10.0f;
+#include "cameraManager.h"
 
-const glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f); // World up position (absolute, normalized)
-
-enum class Direction : unsigned char {
-	FORWARD,
-	BACKWARD,
-	LEFT,
-	RIGHT,
-	UP,
-	DOWN
-};
 
 class Camera {
 public:
-	unsigned int camId;
-	static unsigned int camNumber;
-
 	float camYaw;
 	float camPitch;
 

@@ -11,8 +11,11 @@ struct TexturesBound {
 
 class ModelManager {
 public:
-	bool getRotationOn() const { return m_RotationOn; }
-	void setRotationOn(bool rO) { m_RotationOn = rO; }
+	bool getFirstDraw() const { return m_firstDraw; }
+	void setFirstDraw(bool fD) { m_firstDraw = fD; }
+
+	bool getRotationOn() const { return m_rotationOn; }
+	void setRotationOn(bool rO) { m_rotationOn = rO; }
 
 	glm::mat4 getModelMatrix() const { return m_modelMatrix; }
 	void setModelMatrix(glm::mat4 mMX) { m_modelMatrix = mMX; }
@@ -40,8 +43,7 @@ private:
 	MaterialColors m_matColSet;
 
 	// Properties
+	bool m_firstDraw = 1;
 	bool m_hasMoved = 1;
-	bool m_RotationOn = 0;
-
-
+	bool m_rotationOn = 0;
 };

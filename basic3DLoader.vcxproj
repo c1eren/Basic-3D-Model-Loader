@@ -167,6 +167,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
+    <ClInclude Include="cameraManager.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="ebo.h" />
     <ClInclude Include="mesh.h" />

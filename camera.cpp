@@ -1,14 +1,9 @@
 #include "constants.h"
 #include "camera.h"
 
-unsigned int Camera::camNumber = 0; // To set camId to new value every time
-
 Camera::Camera(glm::vec3 camPosition, glm::vec3 camFront)
     : cameraPos(camPosition), cameraFront(camFront), camYaw(yaw), camPitch(pitch), camZoom(zoom), camSensitivity(sensitivity), camSpeed(0.0f)
 {
-	this->camId = camNumber;
-	camNumber++;
-
     updateCameraFrontVectors();
 }
 

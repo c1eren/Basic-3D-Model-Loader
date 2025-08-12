@@ -7,6 +7,7 @@
 #include <glad/glad.h>
 #include <glm/gtc/type_ptr.hpp>
 
+unsigned int Shader::s_currentlyBoundId = 0;
 
 Shader::Shader(const char* vertexSourcePath, const char* fragmentSourcePath)
 {
@@ -266,5 +267,9 @@ void Shader::setMat4(const char* f_name, glm::mat4 matrix)
 
 void Shader::use()
 {
-	glUseProgram(this->m_programID);
+	if (m_programID != Shader::s_currentlyBoundId)
+	{
+		glUseProgram(m_programID);
+		Shader::s_currentlyBoundId = m_programID;
+	}
 }

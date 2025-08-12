@@ -20,7 +20,6 @@ struct Texture {
 	std::string path;
 };
 
-
 class Model {
 public:
 	Model(std::string filePath, bool flipUVs = 1);
@@ -43,8 +42,6 @@ private:
 	unsigned int verticesCount = 0;
 	unsigned int indicesCount = 0;
 	bool flipUVs = 0;
-	bool firstDraw = 1;
-
 	std::string directory;
 
 private:

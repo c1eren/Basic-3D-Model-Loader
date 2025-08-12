@@ -10,7 +10,8 @@ Model::Model(std::string filePath, bool flipUVs)
 {
 	manager = new(ModelManager);
 	this->flipUVs = flipUVs;
-	texturesLoaded.push_back(Texture{ textureFromFile("defaultTex_diffuse.png", "textures"), "texture_diffuse", "textures/defaultTex_diffuse.png" });
+	texturesLoaded.reserve(1);
+	texturesLoaded.emplace_back(Texture{textureFromFile("defaultTex_diffuse.png", "textures"), "texture_diffuse", "textures/defaultTex_diffuse.png"});
 
 	loadModelFromFile(filePath);
 	sendDataToBuffers();
@@ -176,16 +177,16 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	}
 	else
 	{
-		texIds[0] = 1;
-		texIds[1] = 1;
-		texIds[2] = 1;
-	}
-
+		texIds[0] = texturesLoaded[0].id;
+		texIds[1] = texturesLoaded[0].id;
+		texIds[2] = texturesLoaded[0].id;
+	}			
+				
 	if (!texIds)
-	{
-		texIds[0] = 1;
-		texIds[1] = 1;
-		texIds[2] = 1;
+	{			
+		texIds[0] = texturesLoaded[0].id;
+		texIds[1] = texturesLoaded[0].id;
+		texIds[2] = texturesLoaded[0].id;
 	}
 
 	Mesh rMesh{ vertices, indices, texIds, tempProp, tempCols };
@@ -233,15 +234,16 @@ void Model::sendDataToBuffers()
 void Model::draw(Shader shader)
 {
 	shader.use();
+
 	VAO.bind();
 
 	// Bind active textures
-	if (firstDraw)
+	if (manager->getFirstDraw())
 	{
 		shader.setInt("u_texture_diffuse", 0);
 		shader.setInt("u_texture_specular", 1);
 		shader.setInt("u_texture_normal", 2);
-		firstDraw = 0;
+		manager->setFirstDraw(0);
 	}
 
 	for (unsigned int i = 0; i < meshes.size(); i++)
@@ -254,8 +256,10 @@ void Model::draw(Shader shader)
 		if (tBound.diff != meshTexIds[0] || tBound.spec != meshTexIds[1] || tBound.norm != meshTexIds[2])
 		{
 			glBindTextures(0, 3, meshTexIds);
+			manager->setTexturesBound({ meshTexIds[0], meshTexIds[1], meshTexIds[2] });
+			//std::cout << "new textures in loaded model" << std::endl;
 		}
-
+		
 		// Material properties checking
 		MaterialProperties mProps	  = meshes[i].getMaterialProps();
 		MaterialColors mCols		  = meshes[i].getMaterialCols();
@@ -370,7 +374,7 @@ unsigned int Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, st
 	unsigned int texId = 0;
 
 	if (!mat)
-		return 0;
+		return texturesLoaded[0].id;
 
 	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
 	{
@@ -402,6 +406,9 @@ unsigned int Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, st
 			}
 		}
 	}
+
+	if (!texId)
+		texId = texturesLoaded[0].id;
 
 	return texId;
 }

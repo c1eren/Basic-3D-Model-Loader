@@ -6,6 +6,7 @@
 class Shader {
 public:
 	unsigned int m_programID;
+	static unsigned int s_currentlyBoundId;
 
 public:
 	Shader() : m_programID(0) {}
@@ -36,3 +37,4 @@ public:
 
 	void use();
 };
+
