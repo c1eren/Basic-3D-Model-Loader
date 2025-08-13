@@ -42,6 +42,7 @@ float velocity = 0.0f;
 float rSensitivity = 0.1f;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+std::vector<Model*> renderList;
 
 int main()
 {
@@ -98,12 +99,14 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    Model modelLoaded("models/backpack/backpack.obj", 0);
-    //Model modelLoaded("models/planet/planet.obj");
-    //Model modelLoaded("models/Tree1/Tree1.obj");
-    //Model modelLoaded("models/abandonedHouse/cottage_obj.obj");
-    //Model modelLoaded("models/53-cottage_fbx/cottage_fbx.fbx");
-
+    //Model model1("models/backpack/backpack.obj", 0);
+    Model model2("models/planet/planet.obj");
+    //Model model1("models/Tree1/Tree1.obj");
+    Model model1("models/abandonedHouse/cottage_obj.obj");
+    //Model model1("models/53-cottage_fbx/cottage_fbx.fbx");
+    renderList.reserve(2);
+    renderList.emplace_back(&model1);
+    renderList.emplace_back(&model2);
     float finish = glfwGetTime();
 
     std::cout << "                                                            Total model load time: " << finish - start << std::endl;
@@ -160,7 +163,7 @@ int main()
 
     const unsigned int PS = 14;
     glm::vec3 pLPosition[PS] = {
-        glm::vec3(11.0f, 0.0f, 0.0f),
+        glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(10.0f, 1.0f, 0.0f),
         glm::vec3(10.0f, 2.0f, 1.0f),
         glm::vec3(11.0f, 1.0f, 0.0f),
@@ -234,16 +237,21 @@ int main()
             skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));    // Eliminating translation factor from mat4
         }
         
-        if (modelLoaded.manager->getRotationOn())
+        if (model1.manager->getRotationOn())
         {
-            modelLoaded.manager->setModelMatrix(glm::rotate(modelLoaded.manager->getModelMatrix(), glm::radians(velocity), glm::vec3(0.0f, 1.0f, 0.0f)));
-            modelLoaded.manager->setNormallMatrix(glm::mat3(glm::transpose(glm::inverse(modelLoaded.manager->getModelMatrix()))));
-            modelLoaded.manager->setHasMoved(1);
+            model1.manager->setModelMatrix(glm::rotate(model1.manager->getModelMatrix(), glm::radians(velocity), glm::vec3(0.0f, 1.0f, 0.0f)));
+            model1.manager->setNormallMatrix(glm::mat3(glm::transpose(glm::inverse(model1.manager->getModelMatrix()))));
+            model1.manager->setHasMoved(1);
             velocity = 0.0f;
+            model2.manager->setModelMatrix(glm::mat4(1.0f));
+            model2.manager->setHasMoved(1);
         }
 
-        modelLoaded.draw(shader);
-        modelLoaded.manager->setHasMoved(0);
+        for (unsigned int i = 0; i < renderList.size(); i++)
+        {
+            renderList[i]->draw(shader);
+            model1.manager->setHasMoved(0);
+        }
 
         if (skyboxDraw)
         {
@@ -258,12 +266,12 @@ int main()
             sphere.draw(lightShader);
         }
 
-        //modelLoaded.manager->setModelMatrix(glm::mat4(1.0f));
+        //model1.manager->setModelMatrix(glm::mat4(1.0f));
 
         glfwSwapBuffers(window);
 
         mouseLeft = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
-        modelLoaded.manager->setRotationOn(mouseLeft);
+        model1.manager->setRotationOn(mouseLeft);
        
         glfwPollEvents();
 

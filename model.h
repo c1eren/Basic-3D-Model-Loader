@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <unordered_map>
 
 #include "mesh.h"
 #include "vao.h"
@@ -27,13 +26,14 @@ public:
 
 	// Render
 	void draw(Shader shader);
+	std::vector<Texture> getTexturesLoaded() { return texturesLoaded; }
 
 public:
 	ModelManager *manager;
 
 private:
 	std::vector<Mesh> meshes;
-	std::vector<Texture> texturesLoaded;
+	static std::vector<Texture> texturesLoaded;
 
 	Vao VAO;
 	Vbo VBO;

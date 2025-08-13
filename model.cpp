@@ -5,9 +5,11 @@
 #include "stb_image.h"
 
 unsigned int textureFromFile(const char* str, std::string directory);
+std::vector<Texture> Model::texturesLoaded;
 
 Model::Model(std::string filePath, bool flipUVs)
 {
+
 	manager = new(ModelManager);
 	this->flipUVs = flipUVs;
 	texturesLoaded.reserve(1);
@@ -249,15 +251,16 @@ void Model::draw(Shader shader)
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
 		// Texture checking
-		unsigned int* meshTexIds = meshes[i].getTexIds();
-		TexturesBound tBound	 = manager->getTexturesBound();
+		TexturesBound mBound = { meshes[i].getTexIds()[0], meshes[i].getTexIds()[1], meshes[i].getTexIds()[2] };
+		TexturesBound tBound = manager->getTexturesBound();
 
 		// If Any textures are different, rebind all three
-		if (tBound.diff != meshTexIds[0] || tBound.spec != meshTexIds[1] || tBound.norm != meshTexIds[2])
+		if (tBound.diff != mBound.diff || tBound.spec != mBound.spec || tBound.norm || mBound.norm)
 		{
-			glBindTextures(0, 3, meshTexIds);
-			manager->setTexturesBound({ meshTexIds[0], meshTexIds[1], meshTexIds[2] });
-			//std::cout << "new textures in loaded model" << std::endl;
+			glBindTextures(0, 3, meshes[i].getTexIds());
+
+			manager->setTexturesBound({ mBound });
+			std::cout << "new textures in loaded model" << std::endl;
 		}
 		
 		// Material properties checking
