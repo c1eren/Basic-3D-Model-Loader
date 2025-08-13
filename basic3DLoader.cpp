@@ -97,10 +97,10 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    //Model modelLoaded("models/backpack/backpack.obj", 0);
+    Model modelLoaded("models/backpack/backpack.obj", 0);
     //Model modelLoaded("models/planet/planet.obj");
     //Model modelLoaded("models/Tree1/Tree1.obj");
-    Model modelLoaded("models/abandonedHouse/cottage_obj.obj");
+    //Model modelLoaded("models/abandonedHouse/cottage_obj.obj");
     //Model modelLoaded("models/53-cottage_fbx/cottage_fbx.fbx");
 
     float finish = glfwGetTime();
@@ -145,22 +145,34 @@ int main()
         shaders[i].setMat4("projection", projection);
     }
 
+    // Directional
+    //glm::vec3 direction(-0.2f, -1.0f, -0.3f);
+    glm::vec3 direction(0.497094, -0.353474, 0.792435); // Sun in skybox direction
+    glm::vec3 ambient(0.05f, 0.05f, 0.05f);
+    glm::vec3 diffuse(0.4f, 0.4f, 0.4f);
+    glm::vec3 specular(0.5f, 0.5f, 0.5f);
+
+    shader.setVec3("dirLight.direction", direction);
+    shader.setVec3("dirLight.ambient", ambient);
+    shader.setVec3("dirLight.diffuse", diffuse);
+    shader.setVec3("dirLight.specular", specular);
+
     const unsigned int PS = 14;
     glm::vec3 pLPosition[PS] = {
-        glm::vec3(1.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 1.0f, 0.0f),
-        glm::vec3(0.0f, 2.0f, 1.0f),
-        glm::vec3(1.0f, 1.0f, 0.0f),
-        glm::vec3(1.0f, 0.0f, 1.0f),
-        glm::vec3(0.0f, 1.0f, 1.0f),
-        glm::vec3(1.0f, 1.0f, 1.0f),
-        glm::vec3(0.9f, 0.5f, 0.3f),
-        glm::vec3(0.5f, 0.5f, 0.5f),
-        glm::vec3(0.3f, 0.6f, 0.9f),
-        glm::vec3(0.4f, 0.8f, 0.4f),
-        glm::vec3(0.3f, 0.3f, 1.0f),
-        glm::vec3(1.0f, 0.5f, 0.8f),
-        glm::vec3(0.5f, 0.9f, 0.2f),
+        glm::vec3(11.0f, 0.0f, 0.0f),
+        glm::vec3(10.0f, 1.0f, 0.0f),
+        glm::vec3(10.0f, 2.0f, 1.0f),
+        glm::vec3(11.0f, 1.0f, 0.0f),
+        glm::vec3(11.0f, 0.0f, 1.0f),
+        glm::vec3(10.0f, 1.0f, 1.0f),
+        glm::vec3(11.0f, 1.0f, 1.0f),
+        glm::vec3(10.9f, 0.5f, 0.3f),
+        glm::vec3(10.5f, 0.5f, 0.5f),
+        glm::vec3(10.3f, 0.6f, 0.9f),
+        glm::vec3(10.4f, 0.8f, 0.4f),
+        glm::vec3(10.3f, 0.3f, 1.0f),
+        glm::vec3(11.0f, 0.5f, 0.8f),
+        glm::vec3(10.5f, 0.9f, 0.2f),
     };
 
     // Point lights
@@ -168,6 +180,8 @@ int main()
     glm::vec3 pLAmbient(0.2f);
     glm::vec3 pLDiffuse(1.0f, 0.5f, 0.5f);
     glm::vec3 pLSpecular(1.0f);
+
+    // TODO make point light container with dynamic creation and static count tracker
 
     for (unsigned int i = 0; i < 5; i++)
     {
@@ -249,7 +263,7 @@ int main()
 
         mouseLeft = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
         modelLoaded.manager->setRotationOn(mouseLeft);
-
+       
         glfwPollEvents();
 
         //------------------------------------------------

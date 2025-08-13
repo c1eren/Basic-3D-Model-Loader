@@ -2,18 +2,21 @@
 #define NR_POINT_LIGHTS 5
 out vec4 FragColor;
 
+// In from Vertex
 in VS_FS {
 	vec2 TexCoords;
 	vec3 Normal;
 	vec3 FragPos;
 } from_vs;
 
+// Material Properties
 struct MaterialProperties {
 	float shininess;
 	float opacity;
 };
 uniform MaterialProperties u_matProps;
 
+// Material Colors
 struct MaterialColors {
 	vec3 ambient;		
 	vec3 diffuse;		
@@ -23,6 +26,17 @@ struct MaterialColors {
 };
 uniform MaterialColors u_matCols;
 
+// Directional
+struct DirectionalLight {
+	vec3 direction;
+
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
+};
+uniform DirectionalLight dirLight;
+
+// Point
 struct LightSource {
 	vec3 attenuation;
 	vec3 position;
@@ -33,13 +47,16 @@ struct LightSource {
 };
 uniform LightSource u_lightSource[NR_POINT_LIGHTS];
 
+// Camera
 uniform vec3 u_cameraViewPos;
 
+// Textures
 uniform sampler2D u_texture_diffuse;
 uniform sampler2D u_texture_specular;
 uniform sampler2D u_texture_normal;
 
 vec3 calcPointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 diffTex, vec3 specTex, float shininess);
+vec3 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, vec3 diffTex, vec3 specTex, float shininess);
 
 void main()
 {
@@ -51,6 +68,8 @@ void main()
 	vec3 normTex = vec3(texture(u_texture_normal, from_vs.TexCoords));
 
 	vec3 final = vec3(0.0); // Check transparency if shader fails
+
+	final += calcDirectionalLight(dirLight, norm, viewDir, diffTex, specTex, u_matProps.shininess);
 
 	for (int i = 0; i < NR_POINT_LIGHTS; i++)
 	{
@@ -64,6 +83,26 @@ void main()
 	{
 		discard;
 	}
+}
+
+vec3 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, vec3 diffTex, vec3 specTex, float shininess)
+{
+	// Light direction vector
+	vec3 lightDir = normalize(-light.direction);
+
+	// Diffuse shading
+	float diff = max(dot(normal, lightDir), 0.0);
+
+	// Specular shading
+	vec3 reflectDir = reflect(-lightDir, normal);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+
+	// Results
+	vec3 ambient = light.ambient * diffTex;
+	vec3 diffuse = light.diffuse * diff * diffTex;
+	vec3 specular = light.specular * spec * specTex;
+
+	return (ambient + diffuse + specular);
 }
 
 vec3 calcPointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 diffTex, vec3 specTex, float shininess)
