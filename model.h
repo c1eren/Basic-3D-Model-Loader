@@ -17,6 +17,7 @@ struct Texture {
 	unsigned int id;
 	std::string type;
 	std::string path;
+	unsigned int samplerUnit = 0;
 };
 
 class Model {
@@ -51,6 +52,8 @@ private:
 
 	Mesh processMesh(aiMesh* mesh, const aiScene* scene);
 
+	unsigned int textureFromFile(const char* str, std::string directory);
+
 	MaterialProperties loadMaterialProperties(const aiMaterial *material);
 	MaterialColors loadMaterialColors(const aiMaterial* material);
 
@@ -58,4 +61,7 @@ private:
 
 	// Fill buffers
 	void sendDataToBuffers();
+
+	// Draw checks
+	void finalChecks(Shader shader, Mesh mesh);
 };

@@ -3,14 +3,19 @@
 
 #include "model.h"
 #include "stb_image.h"
+#include "constants.h"
 
 unsigned int textureFromFile(const char* str, std::string directory);
 std::vector<Texture> Model::texturesLoaded;
+unsigned int ModelManager::m_id = 0;
+TexturesBound ModelManager::m_tBound;
 
 Model::Model(std::string filePath, bool flipUVs)
 {
-
 	manager = new(ModelManager);
+	ModelManager::m_id++;
+	manager->id = ModelManager::m_id;
+
 	this->flipUVs = flipUVs;
 	texturesLoaded.reserve(1);
 	texturesLoaded.emplace_back(Texture{textureFromFile("defaultTex_diffuse.png", "textures"), "texture_diffuse", "textures/defaultTex_diffuse.png"});
@@ -74,6 +79,12 @@ void Model::loadModelFromFile(const std::string& filePath)
 	//std::cout << "Materials: " << scene->mNumMaterials << "\n";
 	//std::cout << "Root node name: " << scene->mRootNode->mName.C_Str() << "\n";
 	
+	// If the number of textures we would bind would exceed the texture units available
+	if (scene->mNumTextures > 3 && samplerCounter >= 30)
+	{
+		manager->setRebindRequired(1);
+	}
+
 	// On successful load, process nodes recursively
 	processNode(scene->mRootNode, scene);
 
@@ -242,6 +253,7 @@ void Model::draw(Shader shader)
 	// Bind active textures
 	if (manager->getFirstDraw())
 	{
+		std::cout << "firstDraw" << std::endl;
 		shader.setInt("u_texture_diffuse", 0);
 		shader.setInt("u_texture_specular", 1);
 		shader.setInt("u_texture_normal", 2);
@@ -250,79 +262,89 @@ void Model::draw(Shader shader)
 
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
-		// Texture checking
-		TexturesBound mBound = { meshes[i].getTexIds()[0], meshes[i].getTexIds()[1], meshes[i].getTexIds()[2] };
-		TexturesBound tBound = manager->getTexturesBound();
 
-		// If Any textures are different, rebind all three
-		if (tBound.diff != mBound.diff || tBound.spec != mBound.spec || tBound.norm || mBound.norm)
-		{
-			glBindTextures(0, 3, meshes[i].getTexIds());
-
-			manager->setTexturesBound({ mBound });
-			std::cout << "new textures in loaded model" << std::endl;
-		}
+		finalChecks(shader, meshes[i]);
 		
-		// Material properties checking
-		MaterialProperties mProps	  = meshes[i].getMaterialProps();
-		MaterialColors mCols		  = meshes[i].getMaterialCols();
-		MaterialProperties matPropSet = manager->getMatPropSet();
-		MaterialColors matColSet	  = manager->getMatColSet();
-
-		if (matPropSet.shininess != mProps.shininess || matPropSet.opacity != mProps.opacity)
-		{
-			shader.setFloat("u_matProps.shininess", mProps.shininess);
-			shader.setFloat("u_matProps.opacity",   mProps.opacity);
-			matPropSet.shininess = mProps.shininess;
-			matPropSet.opacity	 = mProps.opacity;
-		}
-		
-		// Material colors checking
-		if (matColSet.color_ambient != mCols.color_ambient)
-		{
-			shader.setVec3("u_matCols.ambient", mCols.color_ambient);
-			matColSet.color_ambient = mCols.color_ambient;
-		}
-
-		if (matColSet.color_diffuse != mCols.color_diffuse) 
-		{
-			shader.setVec3("u_matCols.diffuse", mCols.color_diffuse);
-			matColSet.color_diffuse = mCols.color_diffuse;
-		}
-
-		if (matColSet.color_specular != mCols.color_specular)
-		{
-			shader.setVec3("u_matCols.specular", mCols.color_specular);
-			matColSet.color_specular = mCols.color_specular;
-		}
-
-		if (matColSet.color_emissive != mCols.color_emissive)
-		{
-			shader.setVec3("u_matCols.emissive", mCols.color_emissive);
-			matColSet.color_emissive = mCols.color_emissive;
-		}
-
-		if (matColSet.color_transparent != mCols.color_transparent)
-		{
-			shader.setVec3("u_matCols.transparent", mCols.color_transparent);
-			matColSet.color_transparent = mCols.color_transparent;
-		}
-
-		manager->setMatPropSet(matPropSet);
-		manager->setMatColSet(matColSet);
-
-		if (manager->getHasMoved())
-		{
-			shader.setMat4("model", manager->getModelMatrix());
-			shader.setMat3("normalMatrix", manager->getNormalMatrix());
-			manager->setHasMoved(0);
-		}
+		shader.setMat4("model", manager->getModelMatrix());
+		shader.setMat3("normalMatrix", manager->getNormalMatrix());
 
 		glDrawElementsBaseVertex(GL_TRIANGLES, meshes[i].getIndicesCount(), GL_UNSIGNED_INT, (void*)meshes[i].getIndicesStart(), meshes[i].getBaseVertex());
 	}
 }
 
-unsigned int textureFromFile(const char* str, std::string directory)
+void Model::finalChecks(Shader shader, Mesh mesh)
+{
+	// Texture checking
+	TexturesBound mBound = { mesh.getTexIds()[0], mesh.getTexIds()[1], mesh.getTexIds()[2] };
+	TexturesBound tBound = manager->getTexturesBound();
+
+	// If Any textures are different, rebind all three
+	if (tBound.diff != mBound.diff || tBound.spec != mBound.spec || tBound.norm != mBound.norm)
+	{
+		//glBindTextures(0, 3, mesh.getTexIds());
+		shader.setInt();
+		manager->setTexturesBound({ mBound });
+	}
+
+	// Material properties checking
+	MaterialProperties mProps = mesh.getMaterialProps();
+	MaterialColors mCols = mesh.getMaterialCols();
+	MaterialProperties matPropSet = manager->getMatPropSet();
+	MaterialColors matColSet = manager->getMatColSet();
+
+	if (matPropSet.shininess != mProps.shininess || matPropSet.opacity != mProps.opacity)
+	{
+		shader.setFloat("u_matProps.shininess", mProps.shininess);
+		shader.setFloat("u_matProps.opacity", mProps.opacity);
+		matPropSet.shininess = mProps.shininess;
+		matPropSet.opacity = mProps.opacity;
+	}
+
+	// Material colors checking
+	if (matColSet.color_ambient != mCols.color_ambient)
+	{
+		shader.setVec3("u_matCols.ambient", mCols.color_ambient);
+		matColSet.color_ambient = mCols.color_ambient;
+	}
+
+	if (matColSet.color_diffuse != mCols.color_diffuse)
+	{
+		shader.setVec3("u_matCols.diffuse", mCols.color_diffuse);
+		matColSet.color_diffuse = mCols.color_diffuse;
+	}
+
+	if (matColSet.color_specular != mCols.color_specular)
+	{
+		shader.setVec3("u_matCols.specular", mCols.color_specular);
+		matColSet.color_specular = mCols.color_specular;
+	}
+
+	if (matColSet.color_emissive != mCols.color_emissive)
+	{
+		shader.setVec3("u_matCols.emissive", mCols.color_emissive);
+		matColSet.color_emissive = mCols.color_emissive;
+	}
+
+	if (matColSet.color_transparent != mCols.color_transparent)
+	{
+		shader.setVec3("u_matCols.transparent", mCols.color_transparent);
+		matColSet.color_transparent = mCols.color_transparent;
+	}
+
+	manager->setMatPropSet(matPropSet);
+	manager->setMatColSet(matColSet);
+
+	if (manager->getHasMoved())
+	{
+		shader.setMat4("model", manager->getModelMatrix());
+		shader.setMat3("normalMatrix", manager->getNormalMatrix());
+		manager->setHasMoved(0);
+	}
+
+	return;
+}
+
+unsigned int Model::textureFromFile(const char* str, std::string directory)
 {
 	// Generate texture handle
 	unsigned int texId;
@@ -350,6 +372,13 @@ unsigned int textureFromFile(const char* str, std::string directory)
 			format = GL_RGBA;
 
 		// Generate texture 
+		if (samplerCounter <= 31)
+		{
+			glActiveTexture(GL_TEXTURE0 + samplerCounter);
+			std::cout << "samplerCounter: " << samplerCounter << std::endl;
+			samplerCounter++;
+		}
+
 		glBindTexture(GL_TEXTURE_2D, texId);
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
@@ -367,7 +396,7 @@ unsigned int textureFromFile(const char* str, std::string directory)
 		std::cout << "Failed to load texture at: " << "\"" << path << "\"" << std::endl;
 		stbi_image_free(data);
 	}
-
+	std::cout << texId << std::endl;
 	return texId;
 }
 
@@ -405,7 +434,7 @@ unsigned int Model::loadMaterialTextures(aiMaterial* mat, aiTextureType type, st
 			if (temp)
 			{
 				texId = temp;
-				texturesLoaded.push_back(Texture{ texId, typeName, str.C_Str() });
+				texturesLoaded.push_back(Texture{ texId, typeName, str.C_Str(), samplerCounter - 1 });
 			}
 		}
 	}

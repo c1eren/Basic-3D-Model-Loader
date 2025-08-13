@@ -81,7 +81,7 @@ int main()
 
     int maxTextures = 0;
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextures);
-    std::cout << "Max sampler2D units: " << maxTextures << std::endl;
+    std::cout << "Max sampler2D units: " << maxTextures << std::endl; // 32 on this pc
     */
 
     //viewport
@@ -110,6 +110,8 @@ int main()
     float finish = glfwGetTime();
 
     std::cout << "                                                            Total model load time: " << finish - start << std::endl;
+
+    model2.manager->setPosition(glm::vec3(2.0f));
 
     // Cubemap faces
     std::vector<std::string> bigBlue_faces = {
@@ -243,8 +245,6 @@ int main()
             model1.manager->setNormallMatrix(glm::mat3(glm::transpose(glm::inverse(model1.manager->getModelMatrix()))));
             model1.manager->setHasMoved(1);
             velocity = 0.0f;
-            model2.manager->setModelMatrix(glm::mat4(1.0f));
-            model2.manager->setHasMoved(1);
         }
 
         for (unsigned int i = 0; i < renderList.size(); i++)

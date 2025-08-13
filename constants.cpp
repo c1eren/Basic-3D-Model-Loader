@@ -13,3 +13,5 @@ double previousTime = 0;
 int windowWidth		= 800;
 int windowHeight	= 800;
 
+// Sampler units
+unsigned int samplerCounter = 1;
