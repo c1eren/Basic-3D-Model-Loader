@@ -1,7 +1,7 @@
 // ConsoleApplication2.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 #define STB_IMAGE_IMPLEMENTATION
-#define NR_POINT_LIGHTS 1
+#define NR_POINT_LIGHTS 3
 
 #include <iostream>
 #include <vector>
@@ -112,6 +112,59 @@ void draw(std::vector<RenderTarget> renderList, Checklist *checklist)
             unsigned int indicesStart = model.rt_meshes[j].getIndicesStart();
             unsigned int inBaseVertex = model.rt_meshes[j].getBaseVertex();
 
+            // Material properties checking
+            MaterialProperties mProps     = model.rt_meshes[j].getMaterialProps();
+            MaterialColors mCols          = model.rt_meshes[j].getMaterialCols();
+            MaterialProperties matPropSet = model.rt_manager->getMatPropSet();
+            MaterialColors matColSet      = model.rt_manager->getMatColSet();
+
+            if (matPropSet.shininess != mProps.shininess || matPropSet.opacity != mProps.opacity)
+            {
+                model.rt_shader->setFloat("u_matProps.shininess", mProps.shininess);
+                model.rt_shader->setFloat("u_matProps.opacity", mProps.opacity);
+                matPropSet.shininess = mProps.shininess;
+                matPropSet.opacity = mProps.opacity;
+            }
+
+            // Material colors checking
+            if (matColSet.color_ambient != mCols.color_ambient)
+            {
+                std::cout << "ambient" << std::endl;
+                model.rt_shader->setVec3("u_matCols.ambient", mCols.color_ambient);
+                matColSet.color_ambient = mCols.color_ambient;
+            }
+
+            if (matColSet.color_diffuse != mCols.color_diffuse)
+            {
+                std::cout << "diffuse" << std::endl;
+                model.rt_shader->setVec3("u_matCols.diffuse", mCols.color_diffuse);
+                matColSet.color_diffuse = mCols.color_diffuse;
+            }
+
+            if (matColSet.color_specular != mCols.color_specular)
+            {
+                std::cout << "specular" << std::endl;
+                model.rt_shader->setVec3("u_matCols.specular", mCols.color_specular);
+                matColSet.color_specular = mCols.color_specular;
+            }
+
+            if (matColSet.color_emissive != mCols.color_emissive)
+            {
+                std::cout << "emissive" << std::endl;
+                model.rt_shader->setVec3("u_matCols.emissive", mCols.color_emissive);
+                matColSet.color_emissive = mCols.color_emissive;
+            }
+
+            if (matColSet.color_transparent != mCols.color_transparent)
+            {
+                std::cout << "transparent" << std::endl;
+                model.rt_shader->setVec3("u_matCols.transparent", mCols.color_transparent);
+                matColSet.color_transparent = mCols.color_transparent;
+            }
+
+            model.rt_manager->setMatPropSet(matPropSet);
+            model.rt_manager->setMatColSet(matColSet);
+
             glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
         }
         
@@ -178,12 +231,11 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    Model model1("models/backpack/backpack.obj", 0);
-    //Model model2("models/planet/planet.obj");
+    Model model3("models/backpack/backpack.obj", 0);
+    Model model2("models/planet/planet.obj");
     //Model model1("models/Tree1/Tree1.obj");
-    //Model model1("models/abandonedHouse/cottage_obj.obj");
+    Model model1("models/abandonedHouse/cottage_obj.obj");
     //Model model1("models/53-cottage_fbx/cottage_fbx.fbx");
-    //renderList.emplace_back(&model2);
     float finish = glfwGetTime();
 
     std::cout << "                                                            Total model load time: " << finish - start << std::endl;
@@ -228,8 +280,8 @@ int main()
     // Directional
     //glm::vec3 direction(-0.2f, -1.0f, -0.3f);
     glm::vec3 direction(0.497094, -0.353474, 0.792435); // Sun in skybox direction
-    glm::vec3 ambient(0.05f, 0.05f, 0.05f);
-    glm::vec3 diffuse(0.4f, 0.4f, 0.4f);
+    glm::vec3 ambient(0.15f, 0.15f, 0.15f);
+    glm::vec3 diffuse(0.8f, 0.8f, 0.8f);
     glm::vec3 specular(0.5f, 0.5f, 0.5f);
 
     modelShader.setVec3("dirLight.direction", direction);
@@ -240,9 +292,9 @@ int main()
     const unsigned int PS = 14;
     glm::vec3 pLPosition[PS] = {
         glm::vec3(1.0f, 1.0f, 1.0f),
-        glm::vec3(10.0f, 1.0f, 0.0f),
-        glm::vec3(10.0f, 2.0f, 1.0f),
-        glm::vec3(11.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 2.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 0.0f),
         glm::vec3(11.0f, 0.0f, 1.0f),
         glm::vec3(10.0f, 1.0f, 1.0f),
         glm::vec3(11.0f, 1.0f, 1.0f),
@@ -258,7 +310,7 @@ int main()
     // Point lights
     glm::vec3 pLAttenuation(1.0f, 0.14f, 0.07f);
     glm::vec3 pLAmbient(0.2f);
-    glm::vec3 pLDiffuse(1.0f, 0.5f, 0.5f);
+    glm::vec3 pLDiffuse(0.0f, 0.5f, 0.5f);
     glm::vec3 pLSpecular(1.0f);
 
     // TODO make point light container with dynamic creation and static count tracker
@@ -295,8 +347,17 @@ int main()
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_FRAMEBUFFER_SRGB);
 
-    RenderTarget rt = createRenderTarget(&model1, &modelShader);
-    renderList.push_back(rt);
+    RenderTarget house = createRenderTarget(&model1, &modelShader);
+    RenderTarget planet = createRenderTarget(&model2, &modelShader);
+    RenderTarget backpack = createRenderTarget(&model3, &modelShader);
+
+    renderList.push_back(house);
+    renderList.push_back(planet);
+    renderList.push_back(backpack);
+
+    modelShader.setInt("u_texture_diffuse", 0);
+    modelShader.setInt("u_texture_specular", 1);
+    modelShader.setInt("u_texture_normal", 2);
 
 /*#####################################################################################################################################################*/
     // RENDER LOOP
@@ -307,6 +368,7 @@ int main()
         //glClearColor(0.4, 0.75, 0.60, 1.0);
         glClearColor(0.0, 0.0, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
         if (camera.hasMoved)
         {
@@ -324,9 +386,13 @@ int main()
             velocity = 0.0f;
         }
 
+        // Check cameraFront direction
+        //std::cout << "cameraFront: (" << camera.cameraFront.x  << ", " << camera.cameraFront.y << ", " << camera.cameraFront.z << ")" << std::endl;
+        //std::cout << "pLPosition[0]: (" << pLPosition[0].x << ", " << pLPosition[0].y << ", " << pLPosition[0].z << ")" << std::endl; }
 
         //draw(renderList, &checklist);
-        model1.draw(modelShader);
+        //model1.draw(modelShader);
+        draw(renderList, &checklist);
         model1.manager->setHasMoved(0);
         
 
@@ -337,8 +403,11 @@ int main()
 
         for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
         {
+            pLDiffuse = glm::vec3(sin(currentFrame));
+            lightShader.setVec3("u_lightColor", pLDiffuse);
+            modelShader.setVec3("u_lightSource[0].position", pLDiffuse);
             glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, pLPosition[i] * pLPosition[i]);
+            model = glm::translate(model, pLDiffuse);
             lightShader.setMat4("model", model);
             sphere.draw(lightShader);
         }
