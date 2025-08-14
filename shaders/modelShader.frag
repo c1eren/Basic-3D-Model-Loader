@@ -1,5 +1,5 @@
 #version 460 core
-#define NR_POINT_LIGHTS 1
+#define NR_POINT_LIGHTS 3
 out vec4 FragColor;
 
 // In from Vertex

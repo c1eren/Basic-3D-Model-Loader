@@ -1,7 +1,7 @@
 // ConsoleApplication2.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 #define STB_IMAGE_IMPLEMENTATION
-#define NR_POINT_LIGHTS 1
+#define NR_POINT_LIGHTS 3
 
 #include <iostream>
 #include <vector>
@@ -112,6 +112,54 @@ void draw(std::vector<RenderTarget> renderList, Checklist *checklist)
             unsigned int indicesStart = model.rt_meshes[j].getIndicesStart();
             unsigned int inBaseVertex = model.rt_meshes[j].getBaseVertex();
 
+            // Material properties checking
+            MaterialProperties mProps =     model.rt_meshes[j].getMaterialProps();
+            MaterialColors mCols =          model.rt_meshes[j].getMaterialCols();
+            MaterialProperties matPropSet = model.rt_manager->getMatPropSet();
+            MaterialColors matColSet =      model.rt_manager->getMatColSet();
+
+            if (matPropSet.shininess != mProps.shininess || matPropSet.opacity != mProps.opacity)
+            {
+                model.rt_shader->setFloat("u_matProps.shininess", mProps.shininess);
+                model.rt_shader->setFloat("u_matProps.opacity", mProps.opacity);
+                matPropSet.shininess = mProps.shininess;
+                matPropSet.opacity = mProps.opacity;
+            }
+
+            // Material colors checking
+            if (matColSet.color_ambient != mCols.color_ambient)
+            {
+                model.rt_shader->setVec3("u_matCols.ambient", mCols.color_ambient);
+                matColSet.color_ambient = mCols.color_ambient;
+            }
+
+            if (matColSet.color_diffuse != mCols.color_diffuse)
+            {
+                model.rt_shader->setVec3("u_matCols.diffuse", mCols.color_diffuse);
+                matColSet.color_diffuse = mCols.color_diffuse;
+            }
+
+            if (matColSet.color_specular != mCols.color_specular)
+            {
+                model.rt_shader->setVec3("u_matCols.specular", mCols.color_specular);
+                matColSet.color_specular = mCols.color_specular;
+            }
+
+            if (matColSet.color_emissive != mCols.color_emissive)
+            {
+                model.rt_shader->setVec3("u_matCols.emissive", mCols.color_emissive);
+                matColSet.color_emissive = mCols.color_emissive;
+            }
+
+            if (matColSet.color_transparent != mCols.color_transparent)
+            {
+                model.rt_shader->setVec3("u_matCols.transparent", mCols.color_transparent);
+                matColSet.color_transparent = mCols.color_transparent;
+            }
+
+            model.rt_manager->setMatPropSet(matPropSet);
+            model.rt_manager->setMatColSet(matColSet);
+
             glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
         }
         
@@ -178,10 +226,10 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    Model model1("models/backpack/backpack.obj", 0);
+    //Model model1("models/backpack/backpack.obj", 0);
     //Model model2("models/planet/planet.obj");
     //Model model1("models/Tree1/Tree1.obj");
-    //Model model1("models/abandonedHouse/cottage_obj.obj");
+    Model model1("models/abandonedHouse/cottage_obj.obj");
     //Model model1("models/53-cottage_fbx/cottage_fbx.fbx");
     //renderList.emplace_back(&model2);
     float finish = glfwGetTime();
@@ -240,9 +288,9 @@ int main()
     const unsigned int PS = 14;
     glm::vec3 pLPosition[PS] = {
         glm::vec3(1.0f, 1.0f, 1.0f),
-        glm::vec3(10.0f, 1.0f, 0.0f),
-        glm::vec3(10.0f, 2.0f, 1.0f),
-        glm::vec3(11.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, 2.0f, 1.0f),
+        glm::vec3(1.0f, 1.0f, 0.0f),
         glm::vec3(11.0f, 0.0f, 1.0f),
         glm::vec3(10.0f, 1.0f, 1.0f),
         glm::vec3(11.0f, 1.0f, 1.0f),
@@ -258,7 +306,7 @@ int main()
     // Point lights
     glm::vec3 pLAttenuation(1.0f, 0.14f, 0.07f);
     glm::vec3 pLAmbient(0.2f);
-    glm::vec3 pLDiffuse(1.0f, 0.5f, 0.5f);
+    glm::vec3 pLDiffuse(0.0f, 0.5f, 0.5f);
     glm::vec3 pLSpecular(1.0f);
 
     // TODO make point light container with dynamic creation and static count tracker
@@ -297,6 +345,9 @@ int main()
 
     RenderTarget rt = createRenderTarget(&model1, &modelShader);
     renderList.push_back(rt);
+    modelShader.setInt("u_texture_diffuse", 0);
+    modelShader.setInt("u_texture_specular", 1);
+    modelShader.setInt("u_texture_normal", 2);
 
 /*#####################################################################################################################################################*/
     // RENDER LOOP
@@ -307,6 +358,7 @@ int main()
         //glClearColor(0.4, 0.75, 0.60, 1.0);
         glClearColor(0.0, 0.0, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
         if (camera.hasMoved)
         {
@@ -324,9 +376,13 @@ int main()
             velocity = 0.0f;
         }
 
+        // Check cameraFront direction
+        //std::cout << "cameraFront: (" << camera.cameraFront.x  << ", " << camera.cameraFront.y << ", " << camera.cameraFront.z << ")" << std::endl;
+        //std::cout << "pLPosition[0]: (" << pLPosition[0].x << ", " << pLPosition[0].y << ", " << pLPosition[0].z << ")" << std::endl; }
 
         //draw(renderList, &checklist);
-        model1.draw(modelShader);
+        //model1.draw(modelShader);
+        draw(renderList, &checklist);
         model1.manager->setHasMoved(0);
         
 
@@ -337,8 +393,12 @@ int main()
 
         for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
         {
+            pLDiffuse = glm::vec3(sin(currentFrame));
+            lightShader.setVec3("u_lightColor", pLDiffuse);
+            modelShader.setVec3("u_lightSource[0].position", pLDiffuse);
+            modelShader.setVec3("dirLight.diffuse", glm::vec3(sin(currentFrame)));
             glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, pLPosition[i] * pLPosition[i]);
+            model = glm::translate(model, pLDiffuse);
             lightShader.setMat4("model", model);
             sphere.draw(lightShader);
         }

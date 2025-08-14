@@ -250,7 +250,7 @@ void Model::draw(Shader shader)
 	// Bind active textures
 	if (manager->getFirstDraw())
 	{
-		std::cout << "firstDraw" << std::endl;
+		//std::cout << "firstDraw" << std::endl;
 		shader.setInt("u_texture_diffuse", 0);
 		shader.setInt("u_texture_specular", 1);
 		shader.setInt("u_texture_normal", 2);
