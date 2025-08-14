@@ -80,10 +80,7 @@ void Model::loadModelFromFile(const std::string& filePath)
 	//std::cout << "Root node name: " << scene->mRootNode->mName.C_Str() << "\n";
 	
 	// If the number of textures we would bind would exceed the texture units available
-	if (scene->mNumTextures > 3 && samplerCounter >= 30)
-	{
-		manager->setRebindRequired(1);
-	}
+	
 
 	// On successful load, process nodes recursively
 	processNode(scene->mRootNode, scene);
@@ -116,7 +113,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 	std::vector<unsigned int> indices;
 	indices.reserve(mesh->mNumFaces * 3);
 
-	unsigned int texIds[3];
+	TextureIds texIds;
 
 	Vertex vertex;
 	glm::vec3 vector;
@@ -181,25 +178,25 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		// Get aiMaterial object at that location
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-		tempProp = loadMaterialProperties(material);
+		tempProp	= loadMaterialProperties(material);
 		tempCols	= loadMaterialColors(material);
 
-		texIds[0] = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-		texIds[1] = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-		texIds[2] = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
+		texIds.ti_diffuse  = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+		texIds.ti_specular = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+		texIds.ti_normal   = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
 	}
 	else
 	{
-		texIds[0] = texturesLoaded[0].id;
-		texIds[1] = texturesLoaded[0].id;
-		texIds[2] = texturesLoaded[0].id;
+		texIds.ti_diffuse  = texturesLoaded[0].id;
+		texIds.ti_specular = texturesLoaded[0].id;
+		texIds.ti_normal   = texturesLoaded[0].id;
 	}			
 				
-	if (!texIds)
+	if (!texIds.ti_diffuse)
 	{			
-		texIds[0] = texturesLoaded[0].id;
-		texIds[1] = texturesLoaded[0].id;
-		texIds[2] = texturesLoaded[0].id;
+		texIds.ti_diffuse  = texturesLoaded[0].id;
+		texIds.ti_specular = texturesLoaded[0].id;
+		texIds.ti_normal   = texturesLoaded[0].id;
 	}
 
 	Mesh rMesh{ vertices, indices, texIds, tempProp, tempCols };
@@ -275,14 +272,14 @@ void Model::draw(Shader shader)
 void Model::finalChecks(Shader shader, Mesh mesh)
 {
 	// Texture checking
-	TexturesBound mBound = { mesh.getTexIds()[0], mesh.getTexIds()[1], mesh.getTexIds()[2] };
+	TexturesBound mBound = { mesh.getTexIds().ti_diffuse, mesh.getTexIds().ti_specular, mesh.getTexIds().ti_normal};
 	TexturesBound tBound = manager->getTexturesBound();
 
 	// If Any textures are different, rebind all three
 	if (tBound.diff != mBound.diff || tBound.spec != mBound.spec || tBound.norm != mBound.norm)
 	{
-		//glBindTextures(0, 3, mesh.getTexIds());
-		shader.setInt();
+		unsigned int ids[3] = { mesh.getTexIds().ti_diffuse, mesh.getTexIds().ti_specular, mesh.getTexIds().ti_normal };
+		glBindTextures(0, 3, ids);
 		manager->setTexturesBound({ mBound });
 	}
 
@@ -370,14 +367,6 @@ unsigned int Model::textureFromFile(const char* str, std::string directory)
 			format = GL_RGB;
 		else
 			format = GL_RGBA;
-
-		// Generate texture 
-		if (samplerCounter <= 31)
-		{
-			glActiveTexture(GL_TEXTURE0 + samplerCounter);
-			std::cout << "samplerCounter: " << samplerCounter << std::endl;
-			samplerCounter++;
-		}
 
 		glBindTexture(GL_TEXTURE_2D, texId);
 		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);

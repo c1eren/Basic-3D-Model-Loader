@@ -9,6 +9,12 @@ struct Vertex {
 	glm::vec2 uv;
 };
 
+struct TextureIds {
+	unsigned int ti_diffuse = 0;
+	unsigned int ti_specular = 0;
+	unsigned int ti_normal = 0;
+};
+
 struct MaterialProperties {
 	float shininess = 0.0f;
 	float opacity	= 0.0f;
@@ -32,22 +38,18 @@ class Mesh {
 private:
 	std::vector<Vertex>		  vertices;
 	std::vector<unsigned int> indices;
-	unsigned int			  texIds[3];
 
 	TrackIndices			  tIndices;
 	MaterialColors			  mColors;
 	MaterialProperties		  mProperties;
 	
 public:
-	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, unsigned int ids[3], MaterialProperties mProps, MaterialColors mCols)
-		: vertices(vertices), indices(indices), mProperties(mProps), mColors(mCols)
-	{
-		for (unsigned int i = 0; i < 3; i++)
-		{
-			texIds[i] = ids[i];
-		}
-	}	
+	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, TextureIds ids, MaterialProperties mProps, MaterialColors mCols)
+		: vertices(vertices), indices(indices), texIds(ids), mProperties(mProps), mColors(mCols) {}
 	~Mesh() {}
+
+	TextureIds				  texIds;
+
 	
 	// Setters
 	void setTrackIndices(TrackIndices tInd) { tIndices = tInd; };
@@ -55,7 +57,7 @@ public:
 	// Getters
 	std::vector<Vertex> getVertices() { return vertices; };
 	std::vector<unsigned int> getIndices() { return indices; };
-	unsigned int* getTexIds() { return &texIds[0]; };
+	TextureIds getTexIds() { return texIds; };
 
 	unsigned int getIndicesStart() { return tIndices.indicesStart; };
 	unsigned int getIndicesCount() { return tIndices.indicesCount; };

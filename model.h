@@ -25,6 +25,10 @@ public:
 	Model(std::string filePath, bool flipUVs = 1);
 	~Model(){}
 
+	// Getters
+	unsigned int getVAO() const { return VAO.m_id; }
+	std::vector<Mesh> getMeshes()  { return meshes; } // make const later
+
 	// Render
 	void draw(Shader shader);
 	std::vector<Texture> getTexturesLoaded() { return texturesLoaded; }

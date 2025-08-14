@@ -41,8 +41,87 @@ float yOffset = 0.0f;
 float velocity = 0.0f;
 float rSensitivity = 0.1f;
 
+// UNDER CONSTRUCTION //
+
+struct Checklist {
+    unsigned int cl_diffuse = 0;
+    unsigned int cl_specular = 0;
+    unsigned int cl_normal = 0;
+
+};
+Checklist checklist;
+
+// Render target for lighter draw call
+struct RenderTarget {
+    unsigned int rt_VAO = 0;
+    Shader* rt_shader;
+    ModelManager* rt_manager;
+    std::vector<Mesh> rt_meshes;
+};
+
+
+RenderTarget createRenderTarget(Model* model, Shader* shader)
+{
+    RenderTarget rt;
+    rt.rt_VAO = model->getVAO();
+    rt.rt_shader = shader;
+    rt.rt_manager = model->manager;
+    rt.rt_meshes = model->getMeshes();
+
+    return rt;
+}
+
+void draw(std::vector<RenderTarget> renderList, Checklist *checklist)
+{
+    for (auto &it : renderList)
+    {
+        RenderTarget model = it;
+
+        // Bind active textures
+        if (model.rt_manager->getFirstDraw())
+        {
+            std::cout << "firstDraw" << std::endl;
+            model.rt_shader->setInt("u_texture_diffuse", 0);
+            model.rt_shader->setInt("u_texture_specular", 1);
+            model.rt_shader->setInt("u_texture_normal", 2);
+            model.rt_manager->setFirstDraw(0);
+        }
+
+        model.rt_shader->setMat4("model", model.rt_manager->getModelMatrix());
+        model.rt_shader->setMat3("normalMatrix", model.rt_manager->getNormalMatrix());
+        glBindVertexArray(model.rt_VAO);
+
+        for (unsigned int j = 0; j < model.rt_meshes.size(); j++)
+        {
+            unsigned int textureIds[3] = { model.rt_meshes[j].texIds.ti_diffuse, model.rt_meshes[j].texIds.ti_specular, model.rt_meshes[j].texIds.ti_normal };
+            //std::cout << "textureIds: [" << textureIds[0] << ", " << textureIds[1] << ", " << textureIds[2] << "]" << std::endl;
+            //std::cout << "checklistIds: [" << checklist->cl_diffuse << ", " << checklist->cl_specular << ", " << checklist->cl_normal << "]" << std::endl;
+            // Check texture bindings
+            if ( textureIds[0] != checklist->cl_diffuse
+              || textureIds[1] != checklist->cl_specular
+              || textureIds[2] != checklist->cl_normal)
+            {
+                std::cout << "newtex" << std::endl;
+
+                glBindTextures(0, 3, textureIds);
+                checklist->cl_diffuse  = textureIds[0];
+                checklist->cl_specular = textureIds[1];
+                checklist->cl_normal   = textureIds[2];
+            }
+            unsigned int indicesCount = model.rt_meshes[j].getIndicesCount();
+            unsigned int indicesStart = model.rt_meshes[j].getIndicesStart();
+            unsigned int inBaseVertex = model.rt_meshes[j].getBaseVertex();
+
+            glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
+        }
+        
+    }
+}
+
+// UNDER CONSTRUCTION //
+
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-std::vector<Model*> renderList;
+std::vector<RenderTarget> renderList;
 
 int main()
 {
@@ -99,19 +178,18 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    //Model model1("models/backpack/backpack.obj", 0);
-    Model model2("models/planet/planet.obj");
+    Model model1("models/backpack/backpack.obj", 0);
+    //Model model2("models/planet/planet.obj");
     //Model model1("models/Tree1/Tree1.obj");
-    Model model1("models/abandonedHouse/cottage_obj.obj");
+    //Model model1("models/abandonedHouse/cottage_obj.obj");
     //Model model1("models/53-cottage_fbx/cottage_fbx.fbx");
-    renderList.reserve(2);
-    renderList.emplace_back(&model1);
-    renderList.emplace_back(&model2);
+    //renderList.emplace_back(&model2);
     float finish = glfwGetTime();
 
     std::cout << "                                                            Total model load time: " << finish - start << std::endl;
 
-    model2.manager->setPosition(glm::vec3(2.0f));
+    //model2.manager->setPosition(glm::vec3(0.0f));
+    //model2.manager->setModelMatrix(glm::translate(glm::scale(model2.manager->getModelMatrix(), glm::vec3(2.0f)), glm::vec3(0.0f, -4.0f, 0.0f)));
 
     // Cubemap faces
     std::vector<std::string> bigBlue_faces = {
@@ -137,19 +215,15 @@ int main()
     //Skybox skybox(milkyway_faces);
 
     // Shader
-    Shader shaders[3];
-    Shader shader("shaders/modelShader.vert", "shaders/modelShader.frag");
+    Shader modelShader("shaders/modelShader.vert", "shaders/modelShader.frag");
     Shader skyboxShader("shaders/cubeMap.vert", "shaders/cubeMap.frag");
     Shader lightShader("shaders/lightShader.vert", "shaders/lightShader.frag");
-    shaders[0] = shader;
-    shaders[1] = skyboxShader;
-    shaders[2] = lightShader;
 
     glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)viewport_width / (float)viewport_height, 0.1f, 200.0f);
-    for (unsigned int i = 0; i < (sizeof(shaders) / sizeof(shaders[0])); i++)
-    {
-        shaders[i].setMat4("projection", projection);
-    }
+    modelShader.setMat4("projection", projection);
+    skyboxShader.setMat4("projection", projection);
+    lightShader.setMat4("projection", projection);
+
 
     // Directional
     //glm::vec3 direction(-0.2f, -1.0f, -0.3f);
@@ -158,14 +232,14 @@ int main()
     glm::vec3 diffuse(0.4f, 0.4f, 0.4f);
     glm::vec3 specular(0.5f, 0.5f, 0.5f);
 
-    shader.setVec3("dirLight.direction", direction);
-    shader.setVec3("dirLight.ambient", ambient);
-    shader.setVec3("dirLight.diffuse", diffuse);
-    shader.setVec3("dirLight.specular", specular);
+    modelShader.setVec3("dirLight.direction", direction);
+    modelShader.setVec3("dirLight.ambient", ambient);
+    modelShader.setVec3("dirLight.diffuse", diffuse);
+    modelShader.setVec3("dirLight.specular", specular);
 
     const unsigned int PS = 14;
     glm::vec3 pLPosition[PS] = {
-        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
         glm::vec3(10.0f, 1.0f, 0.0f),
         glm::vec3(10.0f, 2.0f, 1.0f),
         glm::vec3(11.0f, 1.0f, 0.0f),
@@ -205,11 +279,11 @@ int main()
         std::string pLDif = strA + num + strE;
         std::string pLSpe = strA + num + strF;
 
-        shader.setVec3(pLPos.c_str(), pLPosition[i]);
-        shader.setVec3(pLAtt.c_str(), pLAttenuation);
-        shader.setVec3(pLAmb.c_str(), pLAmbient);
-        shader.setVec3(pLDif.c_str(), pLDiffuse);
-        shader.setVec3(pLSpe.c_str(), pLSpecular);
+        modelShader.setVec3(pLPos.c_str(), pLPosition[i]);
+        modelShader.setVec3(pLAtt.c_str(), pLAttenuation);
+        modelShader.setVec3(pLAmb.c_str(), pLAmbient);
+        modelShader.setVec3(pLDif.c_str(), pLDiffuse);
+        modelShader.setVec3(pLSpe.c_str(), pLSpecular);
     }
     lightShader.setVec3("u_lightColor", pLDiffuse);
 
@@ -220,6 +294,9 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_FRAMEBUFFER_SRGB);
+
+    RenderTarget rt = createRenderTarget(&model1, &modelShader);
+    renderList.push_back(rt);
 
 /*#####################################################################################################################################################*/
     // RENDER LOOP
@@ -234,7 +311,7 @@ int main()
         if (camera.hasMoved)
         {
             glm::mat4 view = camera.getViewMatrix();
-            shader.setMat4("view", view);
+            modelShader.setMat4("view", view);
             lightShader.setMat4("view", view);
             skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));    // Eliminating translation factor from mat4
         }
@@ -247,11 +324,11 @@ int main()
             velocity = 0.0f;
         }
 
-        for (unsigned int i = 0; i < renderList.size(); i++)
-        {
-            renderList[i]->draw(shader);
-            model1.manager->setHasMoved(0);
-        }
+
+        //draw(renderList, &checklist);
+        model1.draw(modelShader);
+        model1.manager->setHasMoved(0);
+        
 
         if (skyboxDraw)
         {
