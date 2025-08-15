@@ -22,13 +22,13 @@ public:
 	void setRebindRequired(bool rR) { m_rebindRequired = rR; }
 
 	glm::vec3 getPosition() const { return m_position; }
-	void setPosition(glm::vec3 mP) { m_position = mP; setModelMatrix(glm::translate(glm::mat4(1.0f), mP)); }
+	void setPosition(glm::vec3 mP) { m_position = mP;}// setModelMatrix(glm::translate(glm::mat4(1.0f), mP)); }
 
 	glm::mat4 getModelMatrix() const { return m_modelMatrix; }
 	void setModelMatrix(glm::mat4 mMX) { m_modelMatrix = mMX; }
 
 	glm::mat3 getNormalMatrix() const { return m_normalMatrix; }
-	void setNormallMatrix(glm::mat3 nMX) { m_normalMatrix = nMX; }
+	void setNormalMatrix(glm::mat3 nMX) { m_normalMatrix = nMX; }
 
 	TexturesBound getTexturesBound() const { return m_tBound; }
 	void setTexturesBound(TexturesBound tB) { m_tBound = tB; }

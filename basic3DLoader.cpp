@@ -40,6 +40,8 @@ float xOffset = 0.0f;
 float yOffset = 0.0f;
 float velocity = 0.0f;
 float rSensitivity = 0.1f;
+float xVelocity = 0.0f;
+float yVelocity = 0.0f;
 
 // UNDER CONSTRUCTION //
 
@@ -231,7 +233,7 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    Model model3("models/backpack/backpack.obj", 0);
+    //Model model3("models/backpack/backpack.obj", 0);
     Model model2("models/planet/planet.obj");
     //Model model1("models/Tree1/Tree1.obj");
     Model model1("models/abandonedHouse/cottage_obj.obj");
@@ -349,11 +351,11 @@ int main()
 
     RenderTarget house = createRenderTarget(&model1, &modelShader);
     RenderTarget planet = createRenderTarget(&model2, &modelShader);
-    RenderTarget backpack = createRenderTarget(&model3, &modelShader);
+    //RenderTarget backpack = createRenderTarget(&model3, &modelShader);
 
     renderList.push_back(house);
     renderList.push_back(planet);
-    renderList.push_back(backpack);
+    //renderList.push_back(backpack);
 
     modelShader.setInt("u_texture_diffuse", 0);
     modelShader.setInt("u_texture_specular", 1);
@@ -380,10 +382,26 @@ int main()
         
         if (model1.manager->getRotationOn())
         {
-            model1.manager->setModelMatrix(glm::rotate(model1.manager->getModelMatrix(), glm::radians(velocity), glm::vec3(0.0f, 1.0f, 0.0f)));
-            model1.manager->setNormallMatrix(glm::mat3(glm::transpose(glm::inverse(model1.manager->getModelMatrix()))));
+            //model1.manager->setModelMatrix(glm::rotate(model1.manager->getModelMatrix(), glm::radians(velocity), glm::vec3(0.0f, 1.0f, 0.0f)));
+
+            glm::vec3 rightVector = glm::normalize(glm::cross(camera.cameraFront, worldUp));
+            glm::vec3 upVector = glm::normalize(glm::cross(rightVector, camera.cameraFront));
+            // Important to scale unit vectors AFTER they've been used for cross calculations
+            rightVector *= xVelocity;
+            upVector *= yVelocity;
+            glm::vec3 newVector = rightVector + upVector;
+
+            glm::vec3 newPosition = model1.manager->getPosition() + newVector;
+            glm::mat4 model(1.0f);
+
+            model = glm::translate(model, newPosition);
+            model1.manager->setModelMatrix(model);
+            model1.manager->setPosition(newPosition);
+
+            model1.manager->setNormalMatrix(glm::mat3(glm::transpose(glm::inverse(model1.manager->getModelMatrix()))));
             model1.manager->setHasMoved(1);
-            velocity = 0.0f;
+            xVelocity = 0.0f;
+            yVelocity = 0.0f;
         }
 
         // Check cameraFront direction
@@ -517,6 +535,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     else
     {
         velocity = xOffset * rSensitivity;
+        xVelocity = xOffset * rSensitivity;
+        yVelocity = yOffset * rSensitivity;
     }
 
     lastX = xpos;
