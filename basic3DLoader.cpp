@@ -50,6 +50,9 @@ struct RenderTarget {
     std::vector<Mesh> rt_meshes;
 };
 
+void checkState(RenderTarget* rt);
+void checkTheta(RenderTarget* rt);
+
 
 RenderTarget createRenderTarget(Model* model, Shader* shader)
 {
@@ -156,7 +159,48 @@ void draw(std::vector<RenderTarget> renderList, Checklist *checklist)
             model.rt_manager->setMatPropSet(matPropSet);
             model.rt_manager->setMatColSet(matColSet);
 
-            glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
+
+            if (model.rt_manager->getIsSelected())
+            {
+                glStencilFunc(GL_ALWAYS, 1, 0xFF);         // For the next draw, for every fragment we draw, mark as one (ref)
+                glStencilMask(0xFF);                       // 0xFF means we can write to the stencil in the draw call
+
+                glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
+
+                glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // Basically if what we draw next isn't on top of a box fragment, draw it.
+                glStencilMask(0x00);                 // Don't write to stencil buffer with this draw call 
+
+                model.rt_shader->setMat4("model", glm::scale(model.rt_manager->getModelMatrix(), glm::vec3(1.001f)));
+                model.rt_shader->setInt("u_outline", 1);
+
+                glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
+
+                glStencilMask(0xFF);
+                glStencilFunc(GL_ALWAYS, 1, 0xFF);
+                glEnable(GL_DEPTH_TEST);
+
+                model.rt_shader->setMat4("model", model.rt_manager->getModelMatrix());
+                model.rt_shader->setInt("u_outline", 0);
+            }
+            else
+            {
+                model.rt_shader->setInt("u_outline", 0);
+                glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
+            }
+
+            
+            //if (model.rt_manager->getIsSelected())
+            //{
+            //    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            //    glStencilMask(0x00);
+            //    glDisable(GL_DEPTH_TEST);
+            //
+            //    model.rt_shader->setMat4("model", glm::scale(model.rt_manager->getModelMatrix(), glm::vec3(1.1f)));
+            //    model.rt_shader->setInt("u_outline", 1);
+            //    glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
+            //}
+            //
+            //glStencilMask(0xFF);
         }
         
     }
@@ -223,7 +267,7 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    //Model model3("models/backpack/backpack.obj", 0);
+    Model model3("models/backpack/backpack.obj", 0);
     Model model1("models/planet/planet.obj");
     //Model model1("models/Tree1/Tree1.obj");
     Model model2("models/abandonedHouse/cottage_obj.obj");
@@ -336,20 +380,26 @@ int main()
     // Generate a sphere
     Sphere sphere(100, 100, 0.1);
 
-    glEnable(GL_DEPTH_TEST);
-    //glEnable(GL_FRAMEBUFFER_SRGB);
-
     RenderTarget house = createRenderTarget(&model2, &modelShader);
     RenderTarget planet = createRenderTarget(&model1, &modelShader);
-    //RenderTarget backpack = createRenderTarget(&model2, &modelShader);
+    RenderTarget backpack = createRenderTarget(&model3, &modelShader);
 
-    renderList.push_back(house);
+    //renderList.push_back(house);
     renderList.push_back(planet);
-    //renderList.push_back(backpack);
+    renderList.push_back(backpack);
+    renderList.push_back(house);
 
     modelShader.setInt("u_texture_diffuse", 0);
     modelShader.setInt("u_texture_specular", 1);
     modelShader.setInt("u_texture_normal", 2);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+    //glEnable(GL_FRAMEBUFFER_SRGB);
+
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); // If depth and stencil tests pass, we replace that fragment with our draw call fragment
 
 /*#####################################################################################################################################################*/
     // RENDER LOOP
@@ -359,110 +409,8 @@ int main()
     {
         //glClearColor(0.4, 0.75, 0.60, 1.0);
         glClearColor(0.0, 0.0, 0.0, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-        if (camera.hasMoved)
-        {
-            glm::mat4 view = camera.getViewMatrix();
-            modelShader.setMat4("view", view);
-            lightShader.setMat4("view", view);
-            skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));    // Eliminating translation factor from mat4
-        }
-        
-        // Model handling WIP
-        if (model1.manager->getIsSelected())
-        {
-            glm::mat4 model(1.0f);
-            glm::vec3 position = model1.manager->getPosition();
-            float rotationY = model1.manager->getRotationY();
-            float scale = model1.manager->getScale();
-            
-            if (model1.manager->getIsGrabbed())
-            {
-                if (!model1.manager->getTranslationOn())
-                    position = camera.cameraPos + camera.cameraFront;
-            }
-
-            if (model1.manager->getRotationOn())
-            {
-                rotationY += xVelocity;
-            }
-
-            // Rotation OR translation, but not both simulteneously
-            if (model1.manager->getTranslationOn())
-            {
-                grabPress = 0;
-                // Important to scale unit vectors AFTER they've been used for cross calculations
-                glm::vec3 rightVector = camera.cameraX;
-                glm::vec3 upVector    = camera.cameraY;
-
-                // Scale velocities by distance
-                float factor = glm::max(glm::length(position - camera.cameraPos) / 100.0f, 0.002f);               
-                rightVector *= (xVelocity * factor);
-                upVector    *= (yVelocity * factor);
-                position += (rightVector + upVector);
-            }
-
-            if (model1.manager->getScaleOn())
-            {
-                // Superset prevents (I think) 0 out or negative scale 
-                if (scale < 1)
-                    scale += yScroll * scale;
-                else
-                    scale += yScroll;
-            }
-
-            model = glm::translate(model, position);
-            model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
-            model = glm::scale(model, glm::vec3(scale));
-            model1.manager->setPosition(position);
-            model1.manager->setRotationY(rotationY);
-            model1.manager->setScale(scale);
-            model1.manager->setModelMatrix(model);
-            model1.manager->setNormalMatrix(glm::mat3(glm::transpose(glm::inverse(model1.manager->getModelMatrix()))));
-
-            model1.manager->setHasMoved(1);
-            xVelocity = 0.0f;
-            yVelocity = 0.0f;
-            yScroll   = 0.0f;
-        }
-
-        for (unsigned int i = 0; i < renderList.size(); i++)
-        {
-            RenderTarget* r_model = &renderList[i];
-            glm::vec3 viewDir = glm::normalize(camera.cameraPos - r_model->rt_manager->getPosition());
-            float theta = glm::dot(viewDir, glm::normalize(-camera.cameraFront));
-            std::cout << "Theta: " << theta << std::endl;
-
-            if (theta > 0.90f)
-                r_model->rt_manager->setIsSelected(1);
-            else
-            {
-                if (!isHolding)
-                    r_model->rt_manager->setIsSelected(0);
-            }
-        }
-
-        
-
-        //for (unsigned int i = 0; i < renderList.size(); i++)
-        //{
-        //    RenderTarget *r_model = &renderList[i];
-        //    glm::vec3 viewDir = glm::normalize(camera.cameraPos - r_model->rt_manager->getPosition());
-        //    float theta = glm::dot(viewDir, glm::normalize(-camera.cameraFront));
-        //
-        //    std::cout << "Theta: " << theta << std::endl;
-        //}
-
-        draw(renderList, &checklist);
-        model1.manager->setHasMoved(0);
-        
-
-        if (skyboxDraw)
-        {
-            skybox.draw(skyboxShader);
-        }
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glStencilMask(0x00); // Don't update stencil drawing other stuff
 
         for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
         {
@@ -475,20 +423,102 @@ int main()
             sphere.draw(lightShader);
         }
 
+        if (camera.hasMoved)
+        {
+            glm::mat4 view = camera.getViewMatrix();
+            modelShader.setMat4("view", view);
+            lightShader.setMat4("view", view);
+            skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));    // Eliminating translation factor from mat4
+        }
+        
+        // Model handling WIP
+        for (unsigned int i = 0; i < renderList.size(); i++)
+        {
+            if (renderList[i].rt_manager->getIsSelected())
+            {
+                RenderTarget* model1 = &renderList[i];
+                glm::mat4 model(1.0f);
+                glm::vec3 position = model1->rt_manager->getPosition();
+                float rotationY = model1->rt_manager->getRotationY();
+                float scale = model1->rt_manager->getScale();
+                
+                if (model1->rt_manager->getIsGrabbed())
+                {
+                    if (!model1->rt_manager->getTranslationOn())
+                        position = camera.cameraPos + camera.cameraFront;
+                }
+
+                if (model1->rt_manager->getRotationOn())
+                {
+                    rotationY += xVelocity;
+                }
+
+                // Rotation OR translation, but not both simulteneously
+                if (model1->rt_manager->getTranslationOn())
+                {
+                    grabPress = 0;
+                    // Important to scale unit vectors AFTER they've been used for cross calculations
+                    glm::vec3 rightVector = camera.cameraX;
+                    glm::vec3 upVector    = camera.cameraY;
+
+                    // Scale velocities by distance
+                    float factor = glm::max(glm::length(position - camera.cameraPos) / 100.0f, 0.002f);               
+                    rightVector *= (xVelocity * factor);
+                    upVector    *= (yVelocity * factor);
+                    position += (rightVector + upVector);
+                }
+
+                if (model1->rt_manager->getScaleOn())
+                {
+                    // Superset prevents (I think) 0 out or negative scale 
+                    if (scale < 1)
+                        scale += yScroll * scale;
+                    else
+                        scale += yScroll;
+                }
+
+                model = glm::translate(model, position);
+                model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
+                model = glm::scale(model, glm::vec3(scale));
+                model1->rt_manager->setPosition(position);
+                model1->rt_manager->setRotationY(rotationY);
+                model1->rt_manager->setScale(scale);
+                model1->rt_manager->setModelMatrix(model);
+                model1->rt_manager->setNormalMatrix(glm::mat3(glm::transpose(glm::inverse(model1->rt_manager->getModelMatrix()))));
+
+                model1->rt_manager->setHasMoved(1);
+                xVelocity = 0.0f;
+                yVelocity = 0.0f;
+                yScroll   = 0.0f;
+            }
+        }
+
+        for (unsigned int i = 0; i < renderList.size(); i++)
+        {
+            RenderTarget rt = renderList[i];
+            checkState(&rt);
+            checkTheta(&rt);
+        }
+
+        draw(renderList, &checklist);
+        model1.manager->setHasMoved(0);
+        
+
+        if (skyboxDraw)
+        {
+            skybox.draw(skyboxShader);
+        }
+
         //model1.manager->setModelMatrix(glm::mat4(1.0f));
 
         glfwSwapBuffers(window);
 
         mouseLeft = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
-        model1.manager->setRotationOn(mouseLeft && !spacePress);
-        model1.manager->setTranslationOn(mouseLeft && spacePress);
-        model1.manager->setScaleOn(mouseLeft && scrolling);
-        model1.manager->setIsGrabbed(grabPress);
         if (mouseLeft && spacePress)
             isHolding = 1;
         else
             isHolding = 0;
-       
+
         glfwPollEvents();
 
         //------------------------------------------------
@@ -621,6 +651,39 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     std::cout << "yScroll: " << yScroll << std::endl;
 }
 
+void checkState(RenderTarget* rt)
+{
+    rt->rt_manager->setRotationOn(mouseLeft && !spacePress);
+    rt->rt_manager->setTranslationOn(mouseLeft && spacePress);
+    rt->rt_manager->setScaleOn(mouseLeft && scrolling);
+    rt->rt_manager->setIsGrabbed(grabPress);
+}
+
+void checkTheta(RenderTarget* rt)
+{
+    glm::vec3 viewDir = glm::normalize(camera.cameraPos - rt->rt_manager->getPosition());
+    float theta = glm::dot(viewDir, glm::normalize(-camera.cameraFront));
+    std::cout << "Theta: " << theta << std::endl;
+
+    if (theta > 0.90f)
+    {
+        if (!isSelected)
+        {
+            rt->rt_manager->setIsSelected(1);
+            isSelected = 1;
+        }
+    }
+    else
+    {
+        if (!isHolding)
+        {
+            rt->rt_manager->setIsSelected(0);
+            isSelected = 0;
+        }
+    }
+}
+
+
 void getFramerate(GLFWwindow *window)
 {
     // Get Framerate
@@ -644,6 +707,8 @@ void getFramerate(GLFWwindow *window)
         previousTime = currentFrame;
     }
 }
+
+
 
 /*
 *______________________________________________________________________________________________________________________________________________________________________________________

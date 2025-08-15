@@ -55,6 +55,9 @@ uniform sampler2D u_texture_diffuse;
 uniform sampler2D u_texture_specular;
 uniform sampler2D u_texture_normal;
 
+// Outline
+uniform int u_outline;
+
 vec3 calcPointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 diffTex, vec3 specTex, float shininess);
 vec3 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, vec3 diffTex, vec3 specTex, float shininess);
 
@@ -76,7 +79,14 @@ void main()
 		final += calcPointLight(u_lightSource[i], norm, from_vs.FragPos, viewDir, diffTex, specTex, u_matProps.shininess);
 	}
 
-	FragColor = vec4(final, 1.0);
+	if (u_outline == 1)
+	{
+		FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	}
+	else
+	{
+		FragColor = vec4(final, 1.0);
+	}
 
 	// TODO partial transparency support
 	if (FragColor.a < 1.0)

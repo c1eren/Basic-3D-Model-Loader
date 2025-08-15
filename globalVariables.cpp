@@ -8,6 +8,7 @@ bool spacePress = 0;
 bool scrolling = 0;
 bool grabPress = 0;
 bool isHolding = 0;
+bool isSelected = 0;
 
 double lastX = 400;
 double lastY = 300;
