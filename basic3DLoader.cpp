@@ -26,6 +26,7 @@
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 void getFramerate(GLFWwindow* window);
 unsigned int textureFromFile(const char* str, std::string directory);
@@ -33,15 +34,19 @@ unsigned int textureFromFile(const char* str, std::string directory);
 int toggle = 0;
 bool skyboxDraw = 0;
 
-int mouseLeft = 0;
+bool mouseLeft = 0;
+bool spacePress = 0;
+bool scrolling = 0;
 double lastX = 400;
 double lastY = 300;
 float xOffset = 0.0f;
 float yOffset = 0.0f;
 float velocity = 0.0f;
 float rSensitivity = 0.1f;
+float scrollSensitivity = 0.1f;
 float xVelocity = 0.0f;
 float yVelocity = 0.0f;
+float yScroll = 0.0f;
 
 // UNDER CONSTRUCTION //
 
@@ -103,7 +108,7 @@ void draw(std::vector<RenderTarget> renderList, Checklist *checklist)
               || textureIds[1] != checklist->cl_specular
               || textureIds[2] != checklist->cl_normal)
             {
-                std::cout << "newtex" << std::endl;
+                //std::cout << "newtex" << std::endl;
 
                 glBindTextures(0, 3, textureIds);
                 checklist->cl_diffuse  = textureIds[0];
@@ -226,6 +231,7 @@ int main()
     //glfw callbacks
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     // Hide and capture cursor when application has focus
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -382,34 +388,51 @@ int main()
         
         if (model1.manager->getRotationOn())
         {
-            //model1.manager->setModelMatrix(glm::rotate(model1.manager->getModelMatrix(), glm::radians(velocity), glm::vec3(0.0f, 1.0f, 0.0f)));
-
-            glm::vec3 rightVector = glm::normalize(glm::cross(camera.cameraFront, worldUp));
-            glm::vec3 upVector = glm::normalize(glm::cross(rightVector, camera.cameraFront));
-            // Important to scale unit vectors AFTER they've been used for cross calculations
-            rightVector *= xVelocity;
-            upVector *= yVelocity;
-            glm::vec3 newVector = rightVector + upVector;
-
-            glm::vec3 newPosition = model1.manager->getPosition() + newVector;
             glm::mat4 model(1.0f);
+            glm::vec3 position = model1.manager->getPosition();
+            float rotationY    = model1.manager->getRotationY();
+            float scale        = model1.manager->getScale();
 
-            model = glm::translate(model, newPosition);
+            // Rotation OR translation, but not both simulteneously
+            if (model1.manager->getTranslationOn())
+            {
+                glm::vec3 rightVector = glm::normalize(glm::cross(camera.cameraFront, worldUp));
+                glm::vec3 upVector = glm::normalize(glm::cross(rightVector, camera.cameraFront));
+                // Important to scale unit vectors AFTER they've been used for cross calculations
+                rightVector *= xVelocity;
+                upVector *= yVelocity;
+                glm::vec3 newVector = rightVector + upVector;
+                position += newVector;
+            }
+            else
+            {
+                rotationY += xVelocity;
+            }
+
+            if (model1.manager->getScaleOn())
+            {
+                if (scale < 1)
+                    scale += yScroll * scale;
+                else
+                    scale += yScroll;
+                std::cout << "Scale: " << scale << std::endl;
+            }
+
+            model = glm::translate(model, position);
+            model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::scale(model, glm::vec3(scale));
+            model1.manager->setPosition(position);
+            model1.manager->setRotationY(rotationY);
+            model1.manager->setScale(scale);
             model1.manager->setModelMatrix(model);
-            model1.manager->setPosition(newPosition);
-
             model1.manager->setNormalMatrix(glm::mat3(glm::transpose(glm::inverse(model1.manager->getModelMatrix()))));
+
             model1.manager->setHasMoved(1);
             xVelocity = 0.0f;
             yVelocity = 0.0f;
+            yScroll   = 0.0f;
         }
 
-        // Check cameraFront direction
-        //std::cout << "cameraFront: (" << camera.cameraFront.x  << ", " << camera.cameraFront.y << ", " << camera.cameraFront.z << ")" << std::endl;
-        //std::cout << "pLPosition[0]: (" << pLPosition[0].x << ", " << pLPosition[0].y << ", " << pLPosition[0].z << ")" << std::endl; }
-
-        //draw(renderList, &checklist);
-        //model1.draw(modelShader);
         draw(renderList, &checklist);
         model1.manager->setHasMoved(0);
         
@@ -436,6 +459,8 @@ int main()
 
         mouseLeft = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
         model1.manager->setRotationOn(mouseLeft);
+        model1.manager->setTranslationOn(mouseLeft && spacePress);
+        model1.manager->setScaleOn(mouseLeft && scrolling);
        
         glfwPollEvents();
 
@@ -501,6 +526,15 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         }
     }
 
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+    {
+        spacePress = 1;
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE)
+    {
+        spacePress = 0;
+    }
+
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
     {
         if (skyboxDraw)
@@ -543,6 +577,13 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     lastY = ypos;
     camera.lastX = xpos;
     camera.lastY = ypos;
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    scrolling = 1;
+    yScroll = yoffset * scrollSensitivity;
+    std::cout << "yScroll: " << yScroll << std::endl;
 }
 
 void getFramerate(GLFWwindow *window)
