@@ -38,6 +38,7 @@ public:
 	float camZoom;
 	float camSensitivity;
 	float camSpeed;
+	float velocity = 0.0f;
 
 	glm::vec3 cameraPos;	// Camera world position
 	glm::vec3 cameraFront;	// CameraTarget (what's right in front of us)

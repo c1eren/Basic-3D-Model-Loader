@@ -37,6 +37,8 @@ bool skyboxDraw = 0;
 bool mouseLeft = 0;
 bool spacePress = 0;
 bool scrolling = 0;
+bool grabPress = 0;
+
 double lastX = 400;
 double lastY = 300;
 float xOffset = 0.0f;
@@ -240,9 +242,9 @@ int main()
 
     // Model
     //Model model3("models/backpack/backpack.obj", 0);
-    Model model2("models/planet/planet.obj");
+    Model model1("models/planet/planet.obj");
     //Model model1("models/Tree1/Tree1.obj");
-    Model model1("models/abandonedHouse/cottage_obj.obj");
+    Model model2("models/abandonedHouse/cottage_obj.obj");
     //Model model1("models/53-cottage_fbx/cottage_fbx.fbx");
     float finish = glfwGetTime();
 
@@ -355,9 +357,9 @@ int main()
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_FRAMEBUFFER_SRGB);
 
-    RenderTarget house = createRenderTarget(&model1, &modelShader);
-    RenderTarget planet = createRenderTarget(&model2, &modelShader);
-    //RenderTarget backpack = createRenderTarget(&model3, &modelShader);
+    RenderTarget house = createRenderTarget(&model2, &modelShader);
+    RenderTarget planet = createRenderTarget(&model1, &modelShader);
+    //RenderTarget backpack = createRenderTarget(&model2, &modelShader);
 
     renderList.push_back(house);
     renderList.push_back(planet);
@@ -386,36 +388,47 @@ int main()
             skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));    // Eliminating translation factor from mat4
         }
         
-        if (model1.manager->getRotationOn())
+        // Model handling WIP
+        if (model1.manager->getIsSelected())
         {
             glm::mat4 model(1.0f);
             glm::vec3 position = model1.manager->getPosition();
-            float rotationY    = model1.manager->getRotationY();
-            float scale        = model1.manager->getScale();
-
-            // Rotation OR translation, but not both simulteneously
-            if (model1.manager->getTranslationOn())
+            float rotationY = model1.manager->getRotationY();
+            float scale = model1.manager->getScale();
+            
+            if (model1.manager->getIsGrabbed())
             {
-                glm::vec3 rightVector = glm::normalize(glm::cross(camera.cameraFront, worldUp));
-                glm::vec3 upVector = glm::normalize(glm::cross(rightVector, camera.cameraFront));
-                // Important to scale unit vectors AFTER they've been used for cross calculations
-                rightVector *= xVelocity;
-                upVector *= yVelocity;
-                glm::vec3 newVector = rightVector + upVector;
-                position += newVector;
+                if (!model1.manager->getTranslationOn())
+                    position = camera.cameraPos + camera.cameraFront;
             }
-            else
+
+            if (model1.manager->getRotationOn())
             {
                 rotationY += xVelocity;
             }
 
+            // Rotation OR translation, but not both simulteneously
+            if (model1.manager->getTranslationOn())
+            {
+                grabPress = 0;
+                // Important to scale unit vectors AFTER they've been used for cross calculations
+                glm::vec3 rightVector = camera.cameraX;
+                glm::vec3 upVector    = camera.cameraY;
+
+                // Scale velocities by distance
+                float factor = glm::max(glm::length(position - camera.cameraPos) / 100.0f, 0.002f);               
+                rightVector *= (xVelocity * factor);
+                upVector    *= (yVelocity * factor);
+                position += (rightVector + upVector);
+            }
+
             if (model1.manager->getScaleOn())
             {
+                // Superset prevents (I think) 0 out or negative scale 
                 if (scale < 1)
                     scale += yScroll * scale;
                 else
                     scale += yScroll;
-                std::cout << "Scale: " << scale << std::endl;
             }
 
             model = glm::translate(model, position);
@@ -458,9 +471,10 @@ int main()
         glfwSwapBuffers(window);
 
         mouseLeft = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
-        model1.manager->setRotationOn(mouseLeft);
+        model1.manager->setRotationOn(mouseLeft && !spacePress);
         model1.manager->setTranslationOn(mouseLeft && spacePress);
         model1.manager->setScaleOn(mouseLeft && scrolling);
+        model1.manager->setIsGrabbed(grabPress);
        
         glfwPollEvents();
 
@@ -533,6 +547,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE)
     {
         spacePress = 0;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        if (!grabPress)
+            grabPress = 1;
+        else
+            grabPress = 0;
     }
 
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)

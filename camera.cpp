@@ -20,8 +20,7 @@ void Camera::processKeyPress(Direction dir)
     //    camSpeed = maxSpeed;
     //}
 
-    float velocity = maxSpeed * deltaTime;
-
+    velocity = maxSpeed * deltaTime;
 
     if (dir == Direction::FORWARD)
     {

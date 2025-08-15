@@ -24,6 +24,12 @@ public:
 	bool getScaleOn() const { return m_scaleOn; }
 	void setScaleOn(bool sO) { m_scaleOn = sO; }
 
+	bool getIsSelected() const { return m_isSelected; }
+	void setIsSelected(bool iS) { m_isSelected = iS; }
+
+	bool getIsGrabbed() const { return m_isGrabbed; }
+	void setIsGrabbed(bool iG) { m_isGrabbed = iG; }
+
 	bool getRebindRequired() const { return m_rebindRequired; }
 	void setRebindRequired(bool rR) { m_rebindRequired = rR; }
 
@@ -72,6 +78,8 @@ private:
 	bool m_rotationOn	  = 0;
 	bool m_translationOn  = 0;
 	bool m_scaleOn		  = 0;
+	bool m_isSelected	  = 1; // For now
+	bool m_isGrabbed	  = 0;
 
 	// Position | Rotation | Scale
 	glm::vec3 m_position = glm::vec3(0.0f);
