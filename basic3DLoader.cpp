@@ -13,6 +13,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "globalVariables.h"
 #include "shader.h"
 #include "vao.h"
 #include "vbo.h"
@@ -30,25 +31,6 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 void getFramerate(GLFWwindow* window);
 unsigned int textureFromFile(const char* str, std::string directory);
-
-int toggle = 0;
-bool skyboxDraw = 0;
-
-bool mouseLeft = 0;
-bool spacePress = 0;
-bool scrolling = 0;
-bool grabPress = 0;
-
-double lastX = 400;
-double lastY = 300;
-float xOffset = 0.0f;
-float yOffset = 0.0f;
-float velocity = 0.0f;
-float rSensitivity = 0.1f;
-float scrollSensitivity = 0.1f;
-float xVelocity = 0.0f;
-float yVelocity = 0.0f;
-float yScroll = 0.0f;
 
 // UNDER CONSTRUCTION //
 
@@ -446,6 +428,33 @@ int main()
             yScroll   = 0.0f;
         }
 
+        for (unsigned int i = 0; i < renderList.size(); i++)
+        {
+            RenderTarget* r_model = &renderList[i];
+            glm::vec3 viewDir = glm::normalize(camera.cameraPos - r_model->rt_manager->getPosition());
+            float theta = glm::dot(viewDir, glm::normalize(-camera.cameraFront));
+            std::cout << "Theta: " << theta << std::endl;
+
+            if (theta > 0.90f)
+                r_model->rt_manager->setIsSelected(1);
+            else
+            {
+                if (!isHolding)
+                    r_model->rt_manager->setIsSelected(0);
+            }
+        }
+
+        
+
+        //for (unsigned int i = 0; i < renderList.size(); i++)
+        //{
+        //    RenderTarget *r_model = &renderList[i];
+        //    glm::vec3 viewDir = glm::normalize(camera.cameraPos - r_model->rt_manager->getPosition());
+        //    float theta = glm::dot(viewDir, glm::normalize(-camera.cameraFront));
+        //
+        //    std::cout << "Theta: " << theta << std::endl;
+        //}
+
         draw(renderList, &checklist);
         model1.manager->setHasMoved(0);
         
@@ -475,6 +484,10 @@ int main()
         model1.manager->setTranslationOn(mouseLeft && spacePress);
         model1.manager->setScaleOn(mouseLeft && scrolling);
         model1.manager->setIsGrabbed(grabPress);
+        if (mouseLeft && spacePress)
+            isHolding = 1;
+        else
+            isHolding = 0;
        
         glfwPollEvents();
 

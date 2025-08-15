@@ -4,6 +4,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "mesh.h"
+#include "camera.h"
+
 struct TexturesBound {
 	unsigned int diff = 0;
 	unsigned int spec = 0;
@@ -60,6 +63,8 @@ public:
 	bool getHasMoved() const { return m_hasMoved; }
 	void setHasMoved(bool hM) { m_hasMoved = hM; }
 
+	void move(Camera* camera);
+
 public:
 	static unsigned int m_id;
 	unsigned int id = 0;
@@ -78,7 +83,7 @@ private:
 	bool m_rotationOn	  = 0;
 	bool m_translationOn  = 0;
 	bool m_scaleOn		  = 0;
-	bool m_isSelected	  = 1; // For now
+	bool m_isSelected	  = 0;
 	bool m_isGrabbed	  = 0;
 
 	// Position | Rotation | Scale
