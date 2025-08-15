@@ -48,7 +48,7 @@ public:
 		: vertices(vertices), indices(indices), texIds(ids), mProperties(mProps), mColors(mCols) {}
 	~Mesh() {}
 
-	TextureIds				  texIds;
+	TextureIds texIds;
 
 	
 	// Setters

@@ -14,10 +14,8 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "globalVariables.h"
+#include "renderer.h"
 #include "shader.h"
-#include "vao.h"
-#include "vbo.h"
-#include "ebo.h"
 #include "model.h"
 #include "camera.h"
 #include "constants.h"
@@ -34,182 +32,14 @@ unsigned int textureFromFile(const char* str, std::string directory);
 
 // UNDER CONSTRUCTION //
 
-struct Checklist {
-    unsigned int cl_diffuse = 0;
-    unsigned int cl_specular = 0;
-    unsigned int cl_normal = 0;
-
-};
-Checklist checklist;
-
-// Render target for lighter draw call
-struct RenderTarget {
-    unsigned int rt_VAO = 0;
-    Shader* rt_shader;
-    ModelManager* rt_manager;
-    std::vector<Mesh> rt_meshes;
-};
 
 void checkState(RenderTarget* rt);
 void checkTheta(RenderTarget* rt);
 
-
-RenderTarget createRenderTarget(Model* model, Shader* shader)
-{
-    RenderTarget rt;
-    rt.rt_VAO = model->getVAO();
-    rt.rt_shader = shader;
-    rt.rt_manager = model->manager;
-    rt.rt_meshes = model->getMeshes();
-
-    return rt;
-}
-
-void draw(std::vector<RenderTarget> renderList, Checklist *checklist)
-{
-    for (auto &it : renderList)
-    {
-        RenderTarget model = it;
-
-        // Bind active textures
-        if (model.rt_manager->getFirstDraw())
-        {
-            std::cout << "firstDraw" << std::endl;
-            model.rt_shader->setInt("u_texture_diffuse", 0);
-            model.rt_shader->setInt("u_texture_specular", 1);
-            model.rt_shader->setInt("u_texture_normal", 2);
-            model.rt_manager->setFirstDraw(0);
-        }
-
-        model.rt_shader->setMat4("model", model.rt_manager->getModelMatrix());
-        model.rt_shader->setMat3("normalMatrix", model.rt_manager->getNormalMatrix());
-        glBindVertexArray(model.rt_VAO);
-
-        for (unsigned int j = 0; j < model.rt_meshes.size(); j++)
-        {
-            unsigned int textureIds[3] = { model.rt_meshes[j].texIds.ti_diffuse, model.rt_meshes[j].texIds.ti_specular, model.rt_meshes[j].texIds.ti_normal };
-            //std::cout << "textureIds: [" << textureIds[0] << ", " << textureIds[1] << ", " << textureIds[2] << "]" << std::endl;
-            //std::cout << "checklistIds: [" << checklist->cl_diffuse << ", " << checklist->cl_specular << ", " << checklist->cl_normal << "]" << std::endl;
-            // Check texture bindings
-            if ( textureIds[0] != checklist->cl_diffuse
-              || textureIds[1] != checklist->cl_specular
-              || textureIds[2] != checklist->cl_normal)
-            {
-                //std::cout << "newtex" << std::endl;
-
-                glBindTextures(0, 3, textureIds);
-                checklist->cl_diffuse  = textureIds[0];
-                checklist->cl_specular = textureIds[1];
-                checklist->cl_normal   = textureIds[2];
-            }
-            unsigned int indicesCount = model.rt_meshes[j].getIndicesCount();
-            unsigned int indicesStart = model.rt_meshes[j].getIndicesStart();
-            unsigned int inBaseVertex = model.rt_meshes[j].getBaseVertex();
-
-            // Material properties checking
-            MaterialProperties mProps     = model.rt_meshes[j].getMaterialProps();
-            MaterialColors mCols          = model.rt_meshes[j].getMaterialCols();
-            MaterialProperties matPropSet = model.rt_manager->getMatPropSet();
-            MaterialColors matColSet      = model.rt_manager->getMatColSet();
-
-            if (matPropSet.shininess != mProps.shininess || matPropSet.opacity != mProps.opacity)
-            {
-                model.rt_shader->setFloat("u_matProps.shininess", mProps.shininess);
-                model.rt_shader->setFloat("u_matProps.opacity", mProps.opacity);
-                matPropSet.shininess = mProps.shininess;
-                matPropSet.opacity = mProps.opacity;
-            }
-
-            // Material colors checking
-            if (matColSet.color_ambient != mCols.color_ambient)
-            {
-                std::cout << "ambient" << std::endl;
-                model.rt_shader->setVec3("u_matCols.ambient", mCols.color_ambient);
-                matColSet.color_ambient = mCols.color_ambient;
-            }
-
-            if (matColSet.color_diffuse != mCols.color_diffuse)
-            {
-                std::cout << "diffuse" << std::endl;
-                model.rt_shader->setVec3("u_matCols.diffuse", mCols.color_diffuse);
-                matColSet.color_diffuse = mCols.color_diffuse;
-            }
-
-            if (matColSet.color_specular != mCols.color_specular)
-            {
-                std::cout << "specular" << std::endl;
-                model.rt_shader->setVec3("u_matCols.specular", mCols.color_specular);
-                matColSet.color_specular = mCols.color_specular;
-            }
-
-            if (matColSet.color_emissive != mCols.color_emissive)
-            {
-                std::cout << "emissive" << std::endl;
-                model.rt_shader->setVec3("u_matCols.emissive", mCols.color_emissive);
-                matColSet.color_emissive = mCols.color_emissive;
-            }
-
-            if (matColSet.color_transparent != mCols.color_transparent)
-            {
-                std::cout << "transparent" << std::endl;
-                model.rt_shader->setVec3("u_matCols.transparent", mCols.color_transparent);
-                matColSet.color_transparent = mCols.color_transparent;
-            }
-
-            model.rt_manager->setMatPropSet(matPropSet);
-            model.rt_manager->setMatColSet(matColSet);
-
-
-            if (model.rt_manager->getIsSelected())
-            {
-                glStencilFunc(GL_ALWAYS, 1, 0xFF);         // For the next draw, for every fragment we draw, mark as one (ref)
-                glStencilMask(0xFF);                       // 0xFF means we can write to the stencil in the draw call
-
-                glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
-
-                glStencilFunc(GL_NOTEQUAL, 1, 0xFF); // Basically if what we draw next isn't on top of a box fragment, draw it.
-                glStencilMask(0x00);                 // Don't write to stencil buffer with this draw call 
-
-                model.rt_shader->setMat4("model", glm::scale(model.rt_manager->getModelMatrix(), glm::vec3(1.001f)));
-                model.rt_shader->setInt("u_outline", 1);
-
-                glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
-
-                glStencilMask(0xFF);
-                glStencilFunc(GL_ALWAYS, 1, 0xFF);
-                glEnable(GL_DEPTH_TEST);
-
-                model.rt_shader->setMat4("model", model.rt_manager->getModelMatrix());
-                model.rt_shader->setInt("u_outline", 0);
-            }
-            else
-            {
-                model.rt_shader->setInt("u_outline", 0);
-                glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
-            }
-
-            
-            //if (model.rt_manager->getIsSelected())
-            //{
-            //    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-            //    glStencilMask(0x00);
-            //    glDisable(GL_DEPTH_TEST);
-            //
-            //    model.rt_shader->setMat4("model", glm::scale(model.rt_manager->getModelMatrix(), glm::vec3(1.1f)));
-            //    model.rt_shader->setInt("u_outline", 1);
-            //    glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
-            //}
-            //
-            //glStencilMask(0xFF);
-        }
-        
-    }
-}
-
 // UNDER CONSTRUCTION //
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-std::vector<RenderTarget> renderList;
+Renderer renderer;
 
 int main()
 {
@@ -264,6 +94,16 @@ int main()
     // Hide and capture cursor when application has focus
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+    // Shader
+    Shader modelShader("shaders/modelShader.vert", "shaders/modelShader.frag");
+    Shader skyboxShader("shaders/cubeMap.vert", "shaders/cubeMap.frag");
+    Shader lightShader("shaders/lightShader.vert", "shaders/lightShader.frag");
+
+    glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)viewport_width / (float)viewport_height, 0.1f, 200.0f);
+    modelShader.setMat4("projection", projection);
+    skyboxShader.setMat4("projection", projection);
+    lightShader.setMat4("projection", projection);
+
     float start = glfwGetTime();
 
     // Model
@@ -275,9 +115,9 @@ int main()
     float finish = glfwGetTime();
 
     std::cout << "                                                            Total model load time: " << finish - start << std::endl;
-
-    //model2.manager->setPosition(glm::vec3(0.0f));
-    //model2.manager->setModelMatrix(glm::translate(glm::scale(model2.manager->getModelMatrix(), glm::vec3(2.0f)), glm::vec3(0.0f, -4.0f, 0.0f)));
+    renderer.createRenderTarget(&model1, &modelShader);
+    renderer.createRenderTarget(&model2, &modelShader);
+    renderer.createRenderTarget(&model3, &modelShader);
 
     // Cubemap faces
     std::vector<std::string> bigBlue_faces = {
@@ -301,17 +141,6 @@ int main()
     // Skybox
     Skybox skybox(bigBlue_faces);
     //Skybox skybox(milkyway_faces);
-
-    // Shader
-    Shader modelShader("shaders/modelShader.vert", "shaders/modelShader.frag");
-    Shader skyboxShader("shaders/cubeMap.vert", "shaders/cubeMap.frag");
-    Shader lightShader("shaders/lightShader.vert", "shaders/lightShader.frag");
-
-    glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)viewport_width / (float)viewport_height, 0.1f, 200.0f);
-    modelShader.setMat4("projection", projection);
-    skyboxShader.setMat4("projection", projection);
-    lightShader.setMat4("projection", projection);
-
 
     // Directional
     //glm::vec3 direction(-0.2f, -1.0f, -0.3f);
@@ -380,19 +209,6 @@ int main()
     // Generate a sphere
     Sphere sphere(100, 100, 0.1);
 
-    RenderTarget house = createRenderTarget(&model2, &modelShader);
-    RenderTarget planet = createRenderTarget(&model1, &modelShader);
-    RenderTarget backpack = createRenderTarget(&model3, &modelShader);
-
-    //renderList.push_back(house);
-    renderList.push_back(planet);
-    renderList.push_back(backpack);
-    renderList.push_back(house);
-
-    modelShader.setInt("u_texture_diffuse", 0);
-    modelShader.setInt("u_texture_specular", 1);
-    modelShader.setInt("u_texture_normal", 2);
-
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
@@ -428,33 +244,34 @@ int main()
             glm::mat4 view = camera.getViewMatrix();
             modelShader.setMat4("view", view);
             lightShader.setMat4("view", view);
-            skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));    // Eliminating translation factor from mat4
+            skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));    // Eliminating translation factor from mat4
         }
         
         // Model handling WIP
-        for (unsigned int i = 0; i < renderList.size(); i++)
+        for (unsigned int i = 0; i < renderer.r_renderList.size(); i++)
         {
-            if (renderList[i].rt_manager->getIsSelected())
+            RenderTarget rTarget = renderer.r_renderList[i];
+            ModelManager* manager = rTarget.rt_manager;
+            if (manager->getIsSelected())
             {
-                RenderTarget* model1 = &renderList[i];
                 glm::mat4 model(1.0f);
-                glm::vec3 position = model1->rt_manager->getPosition();
-                float rotationY = model1->rt_manager->getRotationY();
-                float scale = model1->rt_manager->getScale();
+                glm::vec3 position = manager->getPosition();
+                float rotationY = manager->getRotationY();
+                float scale = manager->getScale();
                 
-                if (model1->rt_manager->getIsGrabbed())
+                if (manager->getIsGrabbed())
                 {
-                    if (!model1->rt_manager->getTranslationOn())
+                    if (!manager->getTranslationOn())
                         position = camera.cameraPos + camera.cameraFront;
                 }
 
-                if (model1->rt_manager->getRotationOn())
+                if (manager->getRotationOn())
                 {
                     rotationY += xVelocity;
                 }
 
                 // Rotation OR translation, but not both simulteneously
-                if (model1->rt_manager->getTranslationOn())
+                if (manager->getTranslationOn())
                 {
                     grabPress = 0;
                     // Important to scale unit vectors AFTER they've been used for cross calculations
@@ -468,7 +285,7 @@ int main()
                     position += (rightVector + upVector);
                 }
 
-                if (model1->rt_manager->getScaleOn())
+                if (manager->getScaleOn())
                 {
                     // Superset prevents (I think) 0 out or negative scale 
                     if (scale < 1)
@@ -480,36 +297,36 @@ int main()
                 model = glm::translate(model, position);
                 model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
                 model = glm::scale(model, glm::vec3(scale));
-                model1->rt_manager->setPosition(position);
-                model1->rt_manager->setRotationY(rotationY);
-                model1->rt_manager->setScale(scale);
-                model1->rt_manager->setModelMatrix(model);
-                model1->rt_manager->setNormalMatrix(glm::mat3(glm::transpose(glm::inverse(model1->rt_manager->getModelMatrix()))));
+                manager->setPosition(position);
+                manager->setRotationY(rotationY);
+                manager->setScale(scale);
+                manager->setModelMatrix(model);
+                manager->setNormalMatrix(glm::mat3(glm::transpose(glm::inverse(manager->getModelMatrix()))));
 
-                model1->rt_manager->setHasMoved(1);
+                manager->setHasMoved(1);
                 xVelocity = 0.0f;
                 yVelocity = 0.0f;
                 yScroll   = 0.0f;
             }
         }
 
-        for (unsigned int i = 0; i < renderList.size(); i++)
+        for (unsigned int i = 0; i < renderer.getRenderList().size(); i++)
         {
-            RenderTarget rt = renderList[i];
+            RenderTarget rt = renderer.getRenderList()[i];
             checkState(&rt);
             checkTheta(&rt);
-        }
-
-        draw(renderList, &checklist);
-        model1.manager->setHasMoved(0);
-        
-
+        }        
         if (skyboxDraw)
         {
+            glDepthFunc(GL_LEQUAL);
+            glDepthMask(GL_FALSE);
             skybox.draw(skyboxShader);
+            glDepthMask(GL_TRUE);
+            glDepthFunc(GL_LESS);
         }
+        renderer.draw();
 
-        //model1.manager->setModelMatrix(glm::mat4(1.0f));
+        
 
         glfwSwapBuffers(window);
 
@@ -648,7 +465,6 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     scrolling = 1;
     yScroll = yoffset * scrollSensitivity;
-    std::cout << "yScroll: " << yScroll << std::endl;
 }
 
 void checkState(RenderTarget* rt)
@@ -663,7 +479,6 @@ void checkTheta(RenderTarget* rt)
 {
     glm::vec3 viewDir = glm::normalize(camera.cameraPos - rt->rt_manager->getPosition());
     float theta = glm::dot(viewDir, glm::normalize(-camera.cameraFront));
-    std::cout << "Theta: " << theta << std::endl;
 
     if (theta > 0.90f)
     {
