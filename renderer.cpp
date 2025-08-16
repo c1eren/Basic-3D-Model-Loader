@@ -30,11 +30,19 @@ RenderTarget static createRenderTarget(Model* model, Shader* shader)
 
 void Renderer::draw()
 {
+    if (r_stencil)
+        drawStencil();
+    else
+        drawNoStencil();
+}
+
+void Renderer::drawStencil()
+{
     for (auto& it : r_renderList)
     {
-        RenderTarget *model   = &it;
-        ModelManager *manager = model->rt_manager;
-        Shader       *shader  = model->rt_shader;
+        RenderTarget* model = &it;
+        ModelManager* manager = model->rt_manager;
+        Shader* shader = model->rt_shader;
 
         // Bind active textures
         if (manager->getFirstDraw())
@@ -58,21 +66,21 @@ void Renderer::draw()
             unsigned int indicesCount = mesh->getIndicesCount();
             unsigned int indicesStart = mesh->getIndicesStart();
             unsigned int inBaseVertex = mesh->getBaseVertex();
-            
+
             glBindVertexArray(model->rt_VAO);
 
             if (manager->getIsSelected())
             {
                 // Draw object normally and write stencil
-                glStencilFunc(GL_ALWAYS, 1, 0xFF);         
-                glStencilMask(0xFF);                       
+                glStencilFunc(GL_ALWAYS, 1, 0xFF);
+                glStencilMask(0xFF);
                 shader->setMat4("model", manager->getModelMatrix());
                 shader->setInt("u_outline", 0);
                 glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
-                
+
                 // Draw outline where stencil != 1
-                glStencilFunc(GL_NOTEQUAL, 1, 0xFF); 
-                glStencilMask(0x00);                 
+                glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+                glStencilMask(0x00);
                 glDisable(GL_DEPTH_TEST);
 
                 shader->setMat4("model", glm::scale(manager->getModelMatrix(), glm::vec3(1.05f)));
@@ -91,6 +99,50 @@ void Renderer::draw()
                 shader->setInt("u_outline", 0);
                 glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
             }
+        }
+        manager->setHasMoved(0);
+    }
+}
+
+void Renderer::drawNoStencil()
+{
+    for (auto& it : r_renderList)
+    {
+        RenderTarget* model = &it;
+        ModelManager* manager = model->rt_manager;
+        Shader* shader = model->rt_shader;
+
+        // Bind active textures
+        if (manager->getFirstDraw())
+        {
+            std::cout << "firstDraw" << std::endl;
+            // Could be vec3 but not really a bottleneck right now
+            shader->setInt("u_texture_diffuse", 0);
+            shader->setInt("u_texture_specular", 1);
+            shader->setInt("u_texture_normal", 2);
+            manager->setFirstDraw(0);
+        }
+
+        for (unsigned int j = 0; j < model->rt_meshes.size(); j++)
+        {
+            Mesh* mesh = &model->rt_meshes[j];
+
+            checkTextureBindings(mesh);
+            checkMaterialProperties(mesh, manager, shader);
+            checkMaterialColors(mesh, manager, shader);
+
+            unsigned int indicesCount = mesh->getIndicesCount();
+            unsigned int indicesStart = mesh->getIndicesStart();
+            unsigned int inBaseVertex = mesh->getBaseVertex();
+
+            glBindVertexArray(model->rt_VAO);
+            shader->setMat4("model", manager->getModelMatrix());
+            if (manager->getIsSelected())
+                shader->setInt("u_outline", 1);
+            else
+                shader->setInt("u_outline", 0);
+
+            glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
         }
         manager->setHasMoved(0);
     }

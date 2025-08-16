@@ -81,12 +81,11 @@ void main()
 
 	if (u_outline == 1)
 	{
-		FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+		final += vec3(0.1, 0.1, 0.1);
 	}
-	else
-	{
-		FragColor = vec4(final, 1.0);
-	}
+
+	FragColor = vec4(final, 1.0);
+
 
 	// TODO partial transparency support
 	if (FragColor.a < 1.0)
@@ -142,3 +141,12 @@ vec3 calcPointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir, 
 
 	return (ambient + diffuse + specular);
 }
+
+	//if (u_outline == 1)
+	//{
+	//	FragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	//}
+	//else
+	//{
+	//	FragColor = vec4(final, 1.0);
+	//}

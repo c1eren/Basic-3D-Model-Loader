@@ -253,61 +253,7 @@ int main()
             RenderTarget rTarget = renderer.r_renderList[i];
             ModelManager* manager = rTarget.rt_manager;
             if (manager->getIsSelected())
-            {
-                glm::mat4 model(1.0f);
-                glm::vec3 position = manager->getPosition();
-                float rotationY = manager->getRotationY();
-                float scale = manager->getScale();
-                
-                if (manager->getIsGrabbed())
-                {
-                    if (!manager->getTranslationOn())
-                        position = camera.cameraPos + camera.cameraFront;
-                }
-
-                if (manager->getRotationOn())
-                {
-                    rotationY += xVelocity;
-                }
-
-                // Rotation OR translation, but not both simulteneously
-                if (manager->getTranslationOn())
-                {
-                    grabPress = 0;
-                    // Important to scale unit vectors AFTER they've been used for cross calculations
-                    glm::vec3 rightVector = camera.cameraX;
-                    glm::vec3 upVector    = camera.cameraY;
-
-                    // Scale velocities by distance
-                    float factor = glm::max(glm::length(position - camera.cameraPos) / 100.0f, 0.002f);               
-                    rightVector *= (xVelocity * factor);
-                    upVector    *= (yVelocity * factor);
-                    position += (rightVector + upVector);
-                }
-
-                if (manager->getScaleOn())
-                {
-                    // Superset prevents (I think) 0 out or negative scale 
-                    if (scale < 1)
-                        scale += yScroll * scale;
-                    else
-                        scale += yScroll;
-                }
-
-                model = glm::translate(model, position);
-                model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
-                model = glm::scale(model, glm::vec3(scale));
-                manager->setPosition(position);
-                manager->setRotationY(rotationY);
-                manager->setScale(scale);
-                manager->setModelMatrix(model);
-                manager->setNormalMatrix(glm::mat3(glm::transpose(glm::inverse(manager->getModelMatrix()))));
-
-                manager->setHasMoved(1);
-                xVelocity = 0.0f;
-                yVelocity = 0.0f;
-                yScroll   = 0.0f;
-            }
+                manager->move(&camera);
         }
 
         for (unsigned int i = 0; i < renderer.getRenderList().size(); i++)
@@ -469,22 +415,24 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void checkState(RenderTarget* rt)
 {
-    rt->rt_manager->setRotationOn(mouseLeft && !spacePress);
-    rt->rt_manager->setTranslationOn(mouseLeft && spacePress);
-    rt->rt_manager->setScaleOn(mouseLeft && scrolling);
-    rt->rt_manager->setIsGrabbed(grabPress);
+    ModelManager* manager = rt->rt_manager;
+    manager->setRotationOn(mouseLeft && !spacePress);
+    manager->setTranslationOn(mouseLeft && spacePress);
+    manager->setScaleOn(mouseLeft && scrolling);
+    manager->setIsGrabbed(grabPress && !isHolding);
 }
 
 void checkTheta(RenderTarget* rt)
 {
-    glm::vec3 viewDir = glm::normalize(camera.cameraPos - rt->rt_manager->getPosition());
+    ModelManager* manager = rt->rt_manager;
+    glm::vec3 viewDir = glm::normalize(camera.cameraPos - manager->getPosition());
     float theta = glm::dot(viewDir, glm::normalize(-camera.cameraFront));
 
     if (theta > 0.90f)
     {
         if (!isSelected)
         {
-            rt->rt_manager->setIsSelected(1);
+            manager->setIsSelected(1);
             isSelected = 1;
         }
     }
@@ -492,7 +440,7 @@ void checkTheta(RenderTarget* rt)
     {
         if (!isHolding)
         {
-            rt->rt_manager->setIsSelected(0);
+            manager->setIsSelected(0);
             isSelected = 0;
         }
     }

@@ -20,3 +20,4 @@ extern float scrollSensitivity;
 extern float xVelocity;
 extern float yVelocity;
 extern float yScroll;
+extern float closestZ;

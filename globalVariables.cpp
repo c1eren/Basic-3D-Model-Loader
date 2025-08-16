@@ -20,3 +20,4 @@ float scrollSensitivity = 0.1f;
 float xVelocity = 0.0f;
 float yVelocity = 0.0f;
 float yScroll = 0.0f;
+float closestZ = 100.0f;
