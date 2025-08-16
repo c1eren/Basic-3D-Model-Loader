@@ -27,6 +27,12 @@ public:
 	bool getScaleOn() const { return m_scaleOn; }
 	void setScaleOn(bool sO) { m_scaleOn = sO; }
 
+	unsigned int getRadius() const { return m_radius; }
+	void setRadius(unsigned int mR) { m_radius = mR; }
+
+	unsigned int getNewRadius() const { return m_newRadius; }
+	void setNewRadius(unsigned int nR) { m_newRadius = nR; }
+
 	bool getIsSelected() const { return m_isSelected; }
 	void setIsSelected(bool iS) { m_isSelected = iS; }
 
@@ -85,6 +91,9 @@ private:
 	bool m_scaleOn		  = 0;
 	bool m_isSelected	  = 0;
 	bool m_isGrabbed	  = 0;
+
+	unsigned int m_radius = 0.0f;
+	unsigned int m_newRadius = 0.0f;
 
 	// Position | Rotation | Scale
 	glm::vec3 m_position = glm::vec3(0.0f);

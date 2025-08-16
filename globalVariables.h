@@ -12,6 +12,11 @@ extern bool isSelected;
 
 extern double lastX;
 extern double lastY;
+
+extern unsigned int viewport_width;
+extern unsigned int viewport_height;
+
+extern float fov;
 extern float xOffset;
 extern float yOffset;
 extern float velocity;

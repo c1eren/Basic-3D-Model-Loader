@@ -82,8 +82,6 @@ int main()
     */
 
     //viewport
-    unsigned int viewport_width = 800;
-    unsigned int viewport_height = 600;
     glViewport(0, 0, viewport_width, viewport_height);
 
     //glfw callbacks
@@ -99,7 +97,7 @@ int main()
     Shader skyboxShader("shaders/cubeMap.vert", "shaders/cubeMap.frag");
     Shader lightShader("shaders/lightShader.vert", "shaders/lightShader.frag");
 
-    glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)viewport_width / (float)viewport_height, 0.1f, 200.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(fov), (float)viewport_width / (float)viewport_height, 0.1f, 200.0f);
     modelShader.setMat4("projection", projection);
     skyboxShader.setMat4("projection", projection);
     lightShader.setMat4("projection", projection);
@@ -107,17 +105,17 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    Model model3("models/backpack/backpack.obj", 0);
+    //Model model3("models/backpack/backpack.obj", 0);
     Model model1("models/planet/planet.obj");
     //Model model1("models/Tree1/Tree1.obj");
-    Model model2("models/abandonedHouse/cottage_obj.obj");
+    //Model model2("models/abandonedHouse/cottage_obj.obj");
     //Model model1("models/53-cottage_fbx/cottage_fbx.fbx");
     float finish = glfwGetTime();
 
     std::cout << "                                                            Total model load time: " << finish - start << std::endl;
     renderer.createRenderTarget(&model1, &modelShader);
-    renderer.createRenderTarget(&model2, &modelShader);
-    renderer.createRenderTarget(&model3, &modelShader);
+    //renderer.createRenderTarget(&model2, &modelShader);
+    //renderer.createRenderTarget(&model3, &modelShader);
 
     // Cubemap faces
     std::vector<std::string> bigBlue_faces = {
@@ -214,8 +212,8 @@ int main()
 
     //glEnable(GL_FRAMEBUFFER_SRGB);
 
-    glEnable(GL_STENCIL_TEST);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); // If depth and stencil tests pass, we replace that fragment with our draw call fragment
+    //glEnable(GL_STENCIL_TEST);
+    //glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); // If depth and stencil tests pass, we replace that fragment with our draw call fragment
 
 /*#####################################################################################################################################################*/
     // RENDER LOOP
@@ -225,8 +223,8 @@ int main()
     {
         //glClearColor(0.4, 0.75, 0.60, 1.0);
         glClearColor(0.0, 0.0, 0.0, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        glStencilMask(0x00); // Don't update stencil drawing other stuff
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//| GL_STENCIL_BUFFER_BIT);
+        //glStencilMask(0x00); // Don't update stencil drawing other stuff
 
         for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
         {
@@ -264,13 +262,53 @@ int main()
         }        
         if (skyboxDraw)
         {
-            glDepthFunc(GL_LEQUAL);
-            glDepthMask(GL_FALSE);
+            //glDepthFunc(GL_LEQUAL);
+            //glDepthMask(GL_FALSE);
             skybox.draw(skyboxShader);
-            glDepthMask(GL_TRUE);
-            glDepthFunc(GL_LESS);
+            //glDepthMask(GL_TRUE);
+            //glDepthFunc(GL_LESS);
         }
         renderer.draw();
+
+        //float x = (2.0f * lastX) / viewport_width - 1.0f;
+        //float y = 1.0f - (2.0f * lastY) / viewport_height; 
+        //glm::vec3 ndc(x, y, 1.0f);
+        //glm::vec4 rayClip(ndc.x, ndc.y, -1.0f, 1.0f);
+        //glm::vec4 rayEye(glm::inverse(projection) * rayClip);
+        //rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 1.0f);
+        //glm::vec3 rayWor = (glm::inverse(camera.getViewMatrix()) * rayEye);
+        //// don't forget to normalise the vector at some point
+        //rayWor = glm::normalize(rayWor);
+        //std::cout << "rayWor: (" << rayWor.x << ", " << rayWor.y << ", " << rayWor.z << ")" << std::endl;
+        //
+        //glm::vec4 rayE(camera.cameraFront, 1.0f);
+        //glm::vec3 rayW = glm::normalize(glm::inverse(camera.getViewMatrix()) * glm::vec4(camera.cameraPos, 1.0));
+        //std::cout << "rayW: (" << rayW.x << ", " << rayW.y << ", " << rayW.z << ")" << std::endl;
+        //
+        //glm::vec3 rayT = glm::normalize(-camera.cameraFront);
+        //std::cout << "rayT: (" << rayT.x << ", " << rayT.y << ", " << rayT.z << ")" << std::endl;
+
+        glm::vec3 rayOrigin = camera.cameraPos;
+        // Convert mouse coordinates to screen coordinates
+        float ndcX = (lastX * 2.0f) / viewport_width - 1.0f;
+        float ndcY = 1.0f - (2.0f * lastY) / viewport_height;
+
+        // Scale by projection to get the correct pixel on the near plane
+        float tanFOV = tan(glm::radians(fov) / 2.0f);
+        glm::vec3 rayCameraSpace(ndcX * (viewport_width / (float)viewport_height) * tanFOV, ndcY * tanFOV, -1.0f);
+
+        // Convert to worldSpace using camera properties to slide the vectors
+        glm::vec3 rayWorld = glm::normalize(rayCameraSpace.x * camera.cameraX + rayCameraSpace.y * camera.cameraY + rayCameraSpace.z * camera.cameraFront);
+
+        //std::cout << "rayWorld: (" << rayWorld.x << ", " << rayWorld.y << ", " << rayWorld.z << ")" << std::endl;
+
+        for (unsigned int i = 0; i < renderer.r_renderList.size(); i++)
+        {
+            RenderTarget* rt = &renderer.r_renderList[i];
+            std::cout << "Model radius: " << rt->rt_manager->getNewRadius() << std::endl;
+        }
+
+        
 
         
 

@@ -127,6 +127,11 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		vector.z = mesh->mVertices[i].z;
 		vertex.position = vector;
 
+		glm::vec3 center(0.0f);
+		float dist = glm::length(vertex.position - center);
+		if (dist > manager->getRadius())
+			manager->setRadius(dist);
+
 		// Normal vector
 		if (mesh->mNormals)
 		{

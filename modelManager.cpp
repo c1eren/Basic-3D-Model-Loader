@@ -47,7 +47,10 @@ void ModelManager::move(Camera* camera)
 
         model = glm::translate(model, position);
         model = glm::rotate(model, glm::radians(rotationY), glm::vec3(0.0f, 1.0f, 0.0f));
+
         model = glm::scale(model, glm::vec3(scale));
+        m_newRadius = m_radius * scale;
+
         setPosition(position);
         setRotationY(rotationY);
         setScale(scale);

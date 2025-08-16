@@ -12,6 +12,11 @@ bool isSelected = 0;
 
 double lastX = 400;
 double lastY = 300;
+
+unsigned int viewport_width = 800;
+unsigned int viewport_height = 600;
+
+float fov = 90.0f;
 float xOffset = 0.0f;
 float yOffset = 0.0f;
 float velocity = 0.0f;
