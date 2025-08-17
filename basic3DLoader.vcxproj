@@ -164,6 +164,8 @@
     </ClCompile>
     <ClCompile Include="vao.cpp" />
     <ClCompile Include="vbo.cpp" />
+    <None Include="shaders\crosshair.frag" />
+    <None Include="shaders\crosshair.vert" />
     <None Include="shaders\cubeMap.frag" />
     <None Include="shaders\cubeMap.vert" />
     <None Include="shaders\lightShader.frag" />

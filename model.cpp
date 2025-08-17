@@ -126,11 +126,8 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		vector.y = mesh->mVertices[i].y;
 		vector.z = mesh->mVertices[i].z;
 		vertex.position = vector;
-
-		glm::vec3 center(0.0f);
-		float dist = glm::length(vertex.position - center);
-		if (dist > manager->getRadius())
-			manager->setRadius(dist);
+		
+		center += vector;
 
 		// Normal vector
 		if (mesh->mNormals)
@@ -158,7 +155,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		vertices.emplace_back(vertex);
 		verticesCount++;
 	}
-	
+
 	// Store indices data for rendering
 	for (unsigned int i = 0; i < mesh->mNumFaces; i++)
 	{
@@ -220,9 +217,20 @@ void Model::sendDataToBuffers()
 	unsigned int vertexOffset  = 0;
 	unsigned int indicesOffset = 0;
 
+	center /= verticesCount;
+	std::cout << "Center: (" << center.x << ", " << center.y << ", " << center.z << std::endl;
+
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
 		std::vector<Vertex> meshVertices      = meshes[i].getVertices();
+		for (unsigned int j = 0; j < meshVertices.size(); j++)
+		{
+			glm::vec3 pos = meshVertices[j].position;
+			float dist = glm::length(pos - center);
+			if (dist > radius)
+				radius = dist;
+		}
+
 		std::vector<unsigned int> meshIndices = meshes[i].getIndices();
 
 		// Flattening multiple meshes' vertices into a single vertex buffer.
@@ -237,6 +245,9 @@ void Model::sendDataToBuffers()
 		indicesOffset += meshIndices.size();
 		vertexOffset  += meshVertices.size();
 	}
+	std::cout << "Radius: " << radius << std::endl;
+	manager->setPosition(center);
+	manager->setRadius(radius);
 
 	// Sending data to GPU
 	VAO.bind();

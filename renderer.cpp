@@ -17,17 +17,6 @@ void Renderer::createRenderTarget(Model* model, Shader* shader)
     addToRenderList(rt);
 }
 
-RenderTarget static createRenderTarget(Model* model, Shader* shader)
-{
-    RenderTarget rt;
-    rt.rt_VAO = model->getVAO();
-    rt.rt_shader = shader;
-    rt.rt_manager = model->manager;
-    rt.rt_meshes = model->getMeshes();
-
-    return rt;
-}
-
 void Renderer::draw()
 {
     if (r_stencil)

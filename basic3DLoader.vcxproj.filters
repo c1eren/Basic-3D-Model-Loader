@@ -117,6 +117,8 @@
     <None Include="shaders\modelShader.frag" />
     <None Include="shaders\lightShader.vert" />
     <None Include="shaders\lightShader.frag" />
+    <None Include="shaders\crosshair.vert" />
+    <None Include="shaders\crosshair.frag" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\defaultTex_diffuse.png">

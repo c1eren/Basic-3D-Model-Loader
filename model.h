@@ -46,6 +46,8 @@ private:
 
 	unsigned int verticesCount = 0;
 	unsigned int indicesCount = 0;
+	glm::vec3 center = glm::vec3(0.0f);
+	float radius = 0.0f;
 	bool flipUVs = 0;
 	std::string directory;
 
