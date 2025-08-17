@@ -102,28 +102,28 @@ void Camera::updateCameraFrontVectors()
 glm::mat4 Camera::getViewMatrix()
 {
     hasMoved = 0;
-    return lookAT();
+    return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraY);
 }
 
-glm::mat4 Camera::lookAT()
-{
-    // Get z,x,y axis 
-    glm::vec3 cameraDirection = glm::normalize(-cameraFront); 
-    glm::vec3 cameraX         = glm::normalize(glm::cross(worldUp, cameraDirection));
-    glm::vec3 cameraY         = glm::cross(cameraDirection, cameraX);
-
-    // Translation matrix
-    glm::mat4 translation = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
-                                      0.0f, 1.0f, 0.0f, 0.0f,
-                                      0.0f, 0.0f, 1.0f, 0.0f,
-                                      -cameraPos.x, -cameraPos.y, -cameraPos.z, 1.0f);
-
-    // Create rotation matrix
-    glm::mat4 rotation = glm::mat4(cameraX.x, cameraY.x, cameraDirection.x, 0.0f,
-        cameraX.y, cameraY.y, cameraDirection.y, 0.0f,
-        cameraX.z, cameraY.z, cameraDirection.z, 0.0f,
-        0.0f, 0.0f, 0.0f, 1.0f);
-
-    return rotation * translation;
-}
+//glm::mat4 Camera::lookAT()
+//{
+//    // Get z,x,y axis 
+//    glm::vec3 cameraDirection = glm::normalize(-cameraFront); 
+//    glm::vec3 cameraX         = glm::normalize(glm::cross(worldUp, cameraDirection));
+//    glm::vec3 cameraY         = glm::cross(cameraDirection, cameraX);
+//
+//    // Translation matrix
+//    glm::mat4 translation = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f,
+//                                      0.0f, 1.0f, 0.0f, 0.0f,
+//                                      0.0f, 0.0f, 1.0f, 0.0f,
+//                                      -cameraPos.x, -cameraPos.y, -cameraPos.z, 1.0f);
+//
+//    // Create rotation matrix
+//    glm::mat4 rotation = glm::mat4(cameraX.x, cameraY.x, cameraDirection.x, 0.0f,
+//        cameraX.y, cameraY.y, cameraDirection.y, 0.0f,
+//        cameraX.z, cameraY.z, cameraDirection.z, 0.0f,
+//        0.0f, 0.0f, 0.0f, 1.0f);
+//
+//    return rotation * translation;
+//}
 

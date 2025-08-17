@@ -26,3 +26,6 @@ extern float xVelocity;
 extern float yVelocity;
 extern float yScroll;
 extern float closestZ;
+
+extern double mouseX;
+extern double mouseY;

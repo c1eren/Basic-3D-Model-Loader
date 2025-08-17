@@ -12,9 +12,8 @@ TexturesBound ModelManager::m_tBound;
 
 Model::Model(std::string filePath, bool flipUVs)
 {
-	manager = new(ModelManager);
 	ModelManager::m_id++;
-	manager->id = ModelManager::m_id;
+	manager.id = ModelManager::m_id;
 
 	this->flipUVs = flipUVs;
 	texturesLoaded.reserve(1);
@@ -126,11 +125,8 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		vector.y = mesh->mVertices[i].y;
 		vector.z = mesh->mVertices[i].z;
 		vertex.position = vector;
-
-		glm::vec3 center(0.0f);
-		float dist = glm::length(vertex.position - center);
-		if (dist > manager->getRadius())
-			manager->setRadius(dist);
+		
+		center += vector;
 
 		// Normal vector
 		if (mesh->mNormals)
@@ -158,7 +154,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		vertices.emplace_back(vertex);
 		verticesCount++;
 	}
-	
+
 	// Store indices data for rendering
 	for (unsigned int i = 0; i < mesh->mNumFaces; i++)
 	{
@@ -220,9 +216,20 @@ void Model::sendDataToBuffers()
 	unsigned int vertexOffset  = 0;
 	unsigned int indicesOffset = 0;
 
+	center /= verticesCount;
+	std::cout << "Center: (" << center.x << ", " << center.y << ", " << center.z << std::endl;
+
 	for (unsigned int i = 0; i < meshes.size(); i++)
 	{
 		std::vector<Vertex> meshVertices      = meshes[i].getVertices();
+		for (unsigned int j = 0; j < meshVertices.size(); j++)
+		{
+			glm::vec3 pos = meshVertices[j].position;
+			float dist = glm::length(pos - center);
+			if (dist > radius)
+				radius = dist;
+		}
+
 		std::vector<unsigned int> meshIndices = meshes[i].getIndices();
 
 		// Flattening multiple meshes' vertices into a single vertex buffer.
@@ -237,6 +244,9 @@ void Model::sendDataToBuffers()
 		indicesOffset += meshIndices.size();
 		vertexOffset  += meshVertices.size();
 	}
+	std::cout << "Radius: " << radius << std::endl;
+	manager.setPosition(center);
+	manager.setRadius(radius);
 
 	// Sending data to GPU
 	VAO.bind();
@@ -253,13 +263,13 @@ void Model::draw(Shader shader)
 	VAO.bind();
 
 	// Bind active textures
-	if (manager->getFirstDraw())
+	if (manager.getFirstDraw())
 	{
 		//std::cout << "firstDraw" << std::endl;
 		shader.setInt("u_texture_diffuse", 0);
 		shader.setInt("u_texture_specular", 1);
 		shader.setInt("u_texture_normal", 2);
-		manager->setFirstDraw(0);
+		manager.setFirstDraw(0);
 	}
 
 	for (unsigned int i = 0; i < meshes.size(); i++)
@@ -267,8 +277,8 @@ void Model::draw(Shader shader)
 
 		finalChecks(shader, meshes[i]);
 		
-		shader.setMat4("model", manager->getModelMatrix());
-		shader.setMat3("normalMatrix", manager->getNormalMatrix());
+		shader.setMat4("model", manager.getModelMatrix());
+		shader.setMat3("normalMatrix", manager.getNormalMatrix());
 
 		glDrawElementsBaseVertex(GL_TRIANGLES, meshes[i].getIndicesCount(), GL_UNSIGNED_INT, (void*)meshes[i].getIndicesStart(), meshes[i].getBaseVertex());
 	}
@@ -278,21 +288,21 @@ void Model::finalChecks(Shader shader, Mesh mesh)
 {
 	// Texture checking
 	TexturesBound mBound = { mesh.getTexIds().ti_diffuse, mesh.getTexIds().ti_specular, mesh.getTexIds().ti_normal};
-	TexturesBound tBound = manager->getTexturesBound();
+	TexturesBound tBound = manager.getTexturesBound();
 
 	// If Any textures are different, rebind all three
 	if (tBound.diff != mBound.diff || tBound.spec != mBound.spec || tBound.norm != mBound.norm)
 	{
 		unsigned int ids[3] = { mesh.getTexIds().ti_diffuse, mesh.getTexIds().ti_specular, mesh.getTexIds().ti_normal };
 		glBindTextures(0, 3, ids);
-		manager->setTexturesBound({ mBound });
+		manager.setTexturesBound({ mBound });
 	}
 
 	// Material properties checking
 	MaterialProperties mProps = mesh.getMaterialProps();
 	MaterialColors mCols = mesh.getMaterialCols();
-	MaterialProperties matPropSet = manager->getMatPropSet();
-	MaterialColors matColSet = manager->getMatColSet();
+	MaterialProperties matPropSet = manager.getMatPropSet();
+	MaterialColors matColSet = manager.getMatColSet();
 
 	if (matPropSet.shininess != mProps.shininess || matPropSet.opacity != mProps.opacity)
 	{
@@ -333,14 +343,14 @@ void Model::finalChecks(Shader shader, Mesh mesh)
 		matColSet.color_transparent = mCols.color_transparent;
 	}
 
-	manager->setMatPropSet(matPropSet);
-	manager->setMatColSet(matColSet);
+	manager.setMatPropSet(matPropSet);
+	manager.setMatColSet(matColSet);
 
-	if (manager->getHasMoved())
+	if (manager.getHasMoved())
 	{
-		shader.setMat4("model", manager->getModelMatrix());
-		shader.setMat3("normalMatrix", manager->getNormalMatrix());
-		manager->setHasMoved(0);
+		shader.setMat4("model", manager.getModelMatrix());
+		shader.setMat3("normalMatrix", manager.getNormalMatrix());
+		manager.setHasMoved(0);
 	}
 
 	return;

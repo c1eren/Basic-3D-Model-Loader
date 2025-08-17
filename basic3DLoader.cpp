@@ -30,6 +30,10 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void getFramerate(GLFWwindow* window);
 unsigned int textureFromFile(const char* str, std::string directory);
 
+RenderTarget createRenderTarget(Model* model, Shader* shader);
+bool intersectRaySphere(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& tHit);
+
+
 // UNDER CONSTRUCTION //
 
 
@@ -38,7 +42,7 @@ void checkTheta(RenderTarget* rt);
 
 // UNDER CONSTRUCTION //
 
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, -1.0f));
 Renderer renderer;
 
 int main()
@@ -96,6 +100,7 @@ int main()
     Shader modelShader("shaders/modelShader.vert", "shaders/modelShader.frag");
     Shader skyboxShader("shaders/cubeMap.vert", "shaders/cubeMap.frag");
     Shader lightShader("shaders/lightShader.vert", "shaders/lightShader.frag");
+    Shader crosshairShader("shaders/crosshair.vert", "shaders/crosshair.frag");
 
     glm::mat4 projection = glm::perspective(glm::radians(fov), (float)viewport_width / (float)viewport_height, 0.1f, 200.0f);
     modelShader.setMat4("projection", projection);
@@ -105,16 +110,26 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    //Model model3("models/backpack/backpack.obj", 0);
+    Model model3("models/backpack/backpack.obj", 0);
     Model model1("models/planet/planet.obj");
     //Model model1("models/Tree1/Tree1.obj");
-    //Model model2("models/abandonedHouse/cottage_obj.obj");
+    Model model2("models/abandonedHouse/cottage_obj.obj");
     //Model model1("models/53-cottage_fbx/cottage_fbx.fbx");
     float finish = glfwGetTime();
 
     std::cout << "                                                            Total model load time: " << finish - start << std::endl;
     renderer.createRenderTarget(&model1, &modelShader);
     //renderer.createRenderTarget(&model2, &modelShader);
+    renderer.createRenderTarget(&model3, &modelShader);
+
+    std::cout << "cottage radius: " << model2.manager.getRadius() << std::endl;
+    model2.manager.setModelMatrix(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f)));
+    //renderer.addToRenderList(createRenderTarget(&model1, &modelShader));
+    //for (unsigned int i = 0; i < renderer.r_renderList.size(); i++)
+    //{
+    //    RenderTarget* rt = &renderer.r_renderList[i];
+    //    std::cout << "Model[" << i << "] radius: " << rt->rt_manager.getNewRadius() << std::endl;
+    //}
     //renderer.createRenderTarget(&model3, &modelShader);
 
     // Cubemap faces
@@ -206,6 +221,7 @@ int main()
 
     // Generate a sphere
     Sphere sphere(100, 100, 0.1);
+    Sphere smallSphere(10, 10, 0.01);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -225,6 +241,8 @@ int main()
         glClearColor(0.0, 0.0, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//| GL_STENCIL_BUFFER_BIT);
         //glStencilMask(0x00); // Don't update stencil drawing other stuff
+
+        smallSphere.draw(crosshairShader);
 
         for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
         {
@@ -246,20 +264,41 @@ int main()
         }
         
         // Model handling WIP
+        glm::vec3 rayOrigin = camera.cameraPos;
+        glm::vec3 rayDir = camera.cameraFront;
+        float tHit = 0.0f;
+        float lastHit = 100.0f;
+        ModelManager* nearManager = nullptr;
+
         for (unsigned int i = 0; i < renderer.r_renderList.size(); i++)
         {
             RenderTarget rTarget = renderer.r_renderList[i];
             ModelManager* manager = rTarget.rt_manager;
-            if (manager->getIsSelected())
+            manager->setIsSelected(0);
+
+
+            if (intersectRaySphere(rayOrigin, rayDir, manager->getPosition(), manager->getNewRadius(), tHit))
+            {
+                if (tHit < lastHit)
+                    nearManager = manager;
+                std::cout << "tHit: " << tHit << std::endl;
+            }
+
+        }
+        if (nearManager)
+            nearManager->setIsSelected(1);
+
+        for (unsigned int i = 0; i < renderer.r_renderList.size(); i++)
+        {
+            RenderTarget rTarget = renderer.r_renderList[i];
+            ModelManager* manager = rTarget.rt_manager;
+
+            checkState(&rTarget);
+
+            if (manager->getIsManipulating())
                 manager->move(&camera);
         }
 
-        for (unsigned int i = 0; i < renderer.getRenderList().size(); i++)
-        {
-            RenderTarget rt = renderer.getRenderList()[i];
-            checkState(&rt);
-            checkTheta(&rt);
-        }        
         if (skyboxDraw)
         {
             //glDepthFunc(GL_LEQUAL);
@@ -270,47 +309,21 @@ int main()
         }
         renderer.draw();
 
-        //float x = (2.0f * lastX) / viewport_width - 1.0f;
-        //float y = 1.0f - (2.0f * lastY) / viewport_height; 
-        //glm::vec3 ndc(x, y, 1.0f);
-        //glm::vec4 rayClip(ndc.x, ndc.y, -1.0f, 1.0f);
-        //glm::vec4 rayEye(glm::inverse(projection) * rayClip);
-        //rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 1.0f);
-        //glm::vec3 rayWor = (glm::inverse(camera.getViewMatrix()) * rayEye);
-        //// don't forget to normalise the vector at some point
-        //rayWor = glm::normalize(rayWor);
-        //std::cout << "rayWor: (" << rayWor.x << ", " << rayWor.y << ", " << rayWor.z << ")" << std::endl;
+
+
+        //std::cout << "Sphere center: ("
+        //    << model1.manager->getPosition().x << ", "
+        //    << model1.manager->getPosition().y << ", "
+        //    << model1.manager->getPosition().z << ") radius: "
+        //    << model1.manager->getNewRadius() << std::endl;
         //
-        //glm::vec4 rayE(camera.cameraFront, 1.0f);
-        //glm::vec3 rayW = glm::normalize(glm::inverse(camera.getViewMatrix()) * glm::vec4(camera.cameraPos, 1.0));
-        //std::cout << "rayW: (" << rayW.x << ", " << rayW.y << ", " << rayW.z << ")" << std::endl;
-        //
-        //glm::vec3 rayT = glm::normalize(-camera.cameraFront);
-        //std::cout << "rayT: (" << rayT.x << ", " << rayT.y << ", " << rayT.z << ")" << std::endl;
-
-        glm::vec3 rayOrigin = camera.cameraPos;
-        // Convert mouse coordinates to screen coordinates
-        float ndcX = (lastX * 2.0f) / viewport_width - 1.0f;
-        float ndcY = 1.0f - (2.0f * lastY) / viewport_height;
-
-        // Scale by projection to get the correct pixel on the near plane
-        float tanFOV = tan(glm::radians(fov) / 2.0f);
-        glm::vec3 rayCameraSpace(ndcX * (viewport_width / (float)viewport_height) * tanFOV, ndcY * tanFOV, -1.0f);
-
-        // Convert to worldSpace using camera properties to slide the vectors
-        glm::vec3 rayWorld = glm::normalize(rayCameraSpace.x * camera.cameraX + rayCameraSpace.y * camera.cameraY + rayCameraSpace.z * camera.cameraFront);
-
-        //std::cout << "rayWorld: (" << rayWorld.x << ", " << rayWorld.y << ", " << rayWorld.z << ")" << std::endl;
-
-        for (unsigned int i = 0; i < renderer.r_renderList.size(); i++)
-        {
-            RenderTarget* rt = &renderer.r_renderList[i];
-            std::cout << "Model radius: " << rt->rt_manager->getNewRadius() << std::endl;
-        }
-
-        
-
-        
+        //std::cout << "Ray origin: ("
+        //    << rayOrigin.x << ", "
+        //    << rayOrigin.y << ", "
+        //    << rayOrigin.z << ") dir: ("
+        //    << rayWorld.x << ", "
+        //    << rayWorld.y << ", "
+        //    << rayWorld.z << ")" << std::endl;
 
         glfwSwapBuffers(window);
 
@@ -454,10 +467,10 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 void checkState(RenderTarget* rt)
 {
     ModelManager* manager = rt->rt_manager;
+    manager->setIsManipulating(mouseLeft && manager->getIsSelected());
     manager->setRotationOn(mouseLeft && !spacePress);
     manager->setTranslationOn(mouseLeft && spacePress);
     manager->setScaleOn(mouseLeft && scrolling);
-    manager->setIsGrabbed(grabPress && !isHolding);
 }
 
 void checkTheta(RenderTarget* rt)
@@ -509,6 +522,42 @@ void getFramerate(GLFWwindow *window)
     }
 }
 
+RenderTarget createRenderTarget(Model* model, Shader* shader)
+{
+    RenderTarget rt;
+    rt.rt_VAO = model->getVAO();
+    rt.rt_shader = shader;
+    rt.rt_manager = &model->manager;
+    rt.rt_meshes = model->getMeshes();
+
+    return rt;
+}
+
+bool intersectRaySphere(const glm::vec3 &rayOrigin, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& tHit)
+{
+    glm::vec3 oc = rayOrigin - sphereCenter;
+    // How much are oc(origin - sphere center direction vector) and the rays direction in alignment
+    float b = glm::dot(oc, rayDir);
+    float c = glm::dot(oc, oc) - sphereRadius * sphereRadius;
+    // If h < 0 no intersections, if h = 0 ray grazes sphere, if h > 0 ray enters one point and exits another on sphere
+    float h = b * b - c;
+
+    if (h < 0.0f)
+        return false;
+    // Otherwise compute the two intersection solutions
+    h = sqrt(h);
+    // Closer intersection, t is the distance along the ray
+    float t = -b - h;
+    // If closer intersection is behind rays origin, use the farther one (ie. we are inside an objects bounding sphere)
+    if (t < 0.0f)
+        t = -b + h;
+    // If both are behind camera, return false
+    if (t < 0.0f)
+        return false;
+    // If valid intersection found, return the distance along the ray
+    tHit = t;
+    return true;
+}
 
 
 /*

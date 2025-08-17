@@ -6,6 +6,7 @@
 
 #include "mesh.h"
 #include "camera.h"
+#include <iostream>
 
 struct TexturesBound {
 	unsigned int diff = 0;
@@ -18,6 +19,9 @@ public:
 	bool getFirstDraw() const { return m_firstDraw; }
 	void setFirstDraw(bool fD) { m_firstDraw = fD; }
 
+	bool getIsManipulating() const { return m_isManipulating; }
+	void setIsManipulating(bool iM) { m_isManipulating = iM; }
+
 	bool getRotationOn() const { return m_rotationOn; }
 	void setRotationOn(bool rO) { m_rotationOn = rO; }
 
@@ -27,11 +31,11 @@ public:
 	bool getScaleOn() const { return m_scaleOn; }
 	void setScaleOn(bool sO) { m_scaleOn = sO; }
 
-	unsigned int getRadius() const { return m_radius; }
-	void setRadius(unsigned int mR) { m_radius = mR; }
+	float getRadius() const { return m_radius; }
+	void setRadius(float mR) { m_radius = mR; m_newRadius = mR; }
 
-	unsigned int getNewRadius() const { return m_newRadius; }
-	void setNewRadius(unsigned int nR) { m_newRadius = nR; }
+	float getNewRadius() const { return m_newRadius; }
+	void setNewRadius(float nR) { m_newRadius = nR; }
 
 	bool getIsSelected() const { return m_isSelected; }
 	void setIsSelected(bool iS) { m_isSelected = iS; }
@@ -43,7 +47,8 @@ public:
 	void setRebindRequired(bool rR) { m_rebindRequired = rR; }
 
 	glm::vec3 getPosition() const { return m_position; }
-	void setPosition(glm::vec3 mP) { m_position = mP;}// setModelMatrix(glm::translate(glm::mat4(1.0f), mP)); }
+	void setPosition(glm::vec3 mP) { m_position = mP; }
+	// setModelMatrix(glm::translate(glm::mat4(1.0f), mP)); }
 
 	float getRotationY() const { return m_rotationY; }
 	void setRotationY(float rY) { m_rotationY = rY; }
@@ -84,6 +89,7 @@ private:
 
 	// Properties
 	bool m_firstDraw	  = 1;
+	bool m_isManipulating = 0;
 	bool m_rebindRequired = 0;
 	bool m_hasMoved		  = 1;
 	bool m_rotationOn	  = 0;
@@ -92,8 +98,8 @@ private:
 	bool m_isSelected	  = 0;
 	bool m_isGrabbed	  = 0;
 
-	unsigned int m_radius = 0.0f;
-	unsigned int m_newRadius = 0.0f;
+	float m_radius = 0.0f;
+	float m_newRadius = 0.0f;
 
 	// Position | Rotation | Scale
 	glm::vec3 m_position = glm::vec3(0.0f);
