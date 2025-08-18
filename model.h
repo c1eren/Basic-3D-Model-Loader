@@ -7,11 +7,8 @@
 #include "vbo.h"
 #include "ebo.h"
 #include "shader.h"
-#include "modelManager.h"
 
-#include <assimp/Importer.hpp>
 #include <assimp/scene.h>
-#include <assimp/postprocess.h>
 
 struct Texture {
 	unsigned int id;
@@ -27,14 +24,13 @@ public:
 
 	// Getters
 	unsigned int getVAO() const { return VAO.m_id; }
-	std::vector<Mesh> getMeshes()  { return meshes; } // make const later
+	std::vector<Mesh> &getMeshes()  { return meshes; } // make const later
 
 	// Render
-	void draw(Shader shader);
 	std::vector<Texture> getTexturesLoaded() { return texturesLoaded; }
 
-public:
-	ModelManager manager;
+	glm::vec3 center = glm::vec3(0.0f);
+	float radius = 0.0f;
 
 private:
 	std::vector<Mesh> meshes;
@@ -46,8 +42,7 @@ private:
 
 	unsigned int verticesCount = 0;
 	unsigned int indicesCount = 0;
-	glm::vec3 center = glm::vec3(0.0f);
-	float radius = 0.0f;
+
 	bool flipUVs = 0;
 	std::string directory;
 
@@ -67,7 +62,4 @@ private:
 
 	// Fill buffers
 	void sendDataToBuffers();
-
-	// Draw checks
-	void finalChecks(Shader shader, Mesh mesh);
 };

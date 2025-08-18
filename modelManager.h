@@ -4,9 +4,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "model.h"
 #include "mesh.h"
 #include "camera.h"
-#include <iostream>
+#include "shader.h"
 
 struct TexturesBound {
 	unsigned int diff = 0;
@@ -16,6 +17,14 @@ struct TexturesBound {
 
 class ModelManager {
 public:
+	ModelManager(Model& a_model, Shader& a_shader)
+		: model(a_model), shader(a_shader) {
+		m_center = model.center;
+		m_radius = model.radius;
+		m_newRadius = model.radius;
+	}
+	~ModelManager() {}
+
 	bool getFirstDraw() const { return m_firstDraw; }
 	void setFirstDraw(bool fD) { m_firstDraw = fD; }
 
@@ -48,7 +57,6 @@ public:
 
 	glm::vec3 getPosition() const { return m_position; }
 	void setPosition(glm::vec3 mP) { m_position = mP; }
-	// setModelMatrix(glm::translate(glm::mat4(1.0f), mP)); }
 
 	float getRotationY() const { return m_rotationY; }
 	void setRotationY(float rY) { m_rotationY = rY; }
@@ -74,11 +82,13 @@ public:
 	bool getHasMoved() const { return m_hasMoved; }
 	void setHasMoved(bool hM) { m_hasMoved = hM; }
 
-	void move(Camera* camera);
+	void move(Camera& camera);
 
 public:
+	Model& model;
 	static unsigned int m_id;
 	unsigned int id = 0;
+	Shader& shader;
 
 private:
 	glm::mat4 m_modelMatrix = glm::mat4(1.0f);
@@ -100,6 +110,8 @@ private:
 
 	float m_radius = 0.0f;
 	float m_newRadius = 0.0f;
+
+	glm::vec3 m_center = glm::vec3(0.0f);
 
 	// Position | Rotation | Scale
 	glm::vec3 m_position = glm::vec3(0.0f);

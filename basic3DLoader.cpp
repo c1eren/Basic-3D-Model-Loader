@@ -30,15 +30,14 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void getFramerate(GLFWwindow* window);
 unsigned int textureFromFile(const char* str, std::string directory);
 
-RenderTarget createRenderTarget(Model* model, Shader* shader);
+//RenderTarget createRenderTarget(Model* model, Shader* shader);
 bool intersectRaySphere(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& tHit);
 
 
 // UNDER CONSTRUCTION //
 
 
-void checkState(RenderTarget* rt);
-void checkTheta(RenderTarget* rt);
+void checkState(ModelManager& manager);
 
 // UNDER CONSTRUCTION //
 
@@ -110,27 +109,26 @@ int main()
     float start = glfwGetTime();
 
     // Model
-    Model model3("models/backpack/backpack.obj", 0);
     Model model1("models/planet/planet.obj");
-    //Model model1("models/Tree1/Tree1.obj");
     Model model2("models/abandonedHouse/cottage_obj.obj");
+    Model model3("models/backpack/backpack.obj", 0);
+
+    //Model model1("models/Tree1/Tree1.obj");
     //Model model1("models/53-cottage_fbx/cottage_fbx.fbx");
     float finish = glfwGetTime();
 
     std::cout << "                                                            Total model load time: " << finish - start << std::endl;
-    renderer.createRenderTarget(&model1, &modelShader);
+    //renderer.createRenderTarget(model1, modelShader);
     //renderer.createRenderTarget(&model2, &modelShader);
-    renderer.createRenderTarget(&model3, &modelShader);
+    //renderer.createRenderTarget(model3, modelShader);
 
-    std::cout << "cottage radius: " << model2.manager.getRadius() << std::endl;
-    model2.manager.setModelMatrix(glm::translate(glm::mat4(1.0f), glm::vec3(10.0f)));
-    //renderer.addToRenderList(createRenderTarget(&model1, &modelShader));
-    //for (unsigned int i = 0; i < renderer.r_renderList.size(); i++)
-    //{
-    //    RenderTarget* rt = &renderer.r_renderList[i];
-    //    std::cout << "Model[" << i << "] radius: " << rt->rt_manager.getNewRadius() << std::endl;
-    //}
-    //renderer.createRenderTarget(&model3, &modelShader);
+    ModelManager planet(model1, modelShader);
+    ModelManager house(model2, modelShader);
+    ModelManager backpack(model3, modelShader);
+
+    renderer.r_renderList.push_back(planet);
+    renderer.r_renderList.push_back(backpack);
+    renderer.r_renderList.push_back(house);
 
     // Cubemap faces
     std::vector<std::string> bigBlue_faces = {
@@ -266,37 +264,33 @@ int main()
         // Model handling WIP
         glm::vec3 rayOrigin = camera.cameraPos;
         glm::vec3 rayDir = camera.cameraFront;
-        float tHit = 0.0f;
         float lastHit = 100.0f;
         ModelManager* nearManager = nullptr;
 
-        for (unsigned int i = 0; i < renderer.r_renderList.size(); i++)
+        for (auto& manager : renderer.r_renderList) 
         {
-            RenderTarget rTarget = renderer.r_renderList[i];
-            ModelManager* manager = rTarget.rt_manager;
-            manager->setIsSelected(0);
+            manager.setIsSelected(0);
+            float tHit = 0.0f;
 
-
-            if (intersectRaySphere(rayOrigin, rayDir, manager->getPosition(), manager->getNewRadius(), tHit))
+            if (intersectRaySphere(rayOrigin, rayDir, manager.getPosition(), manager.getNewRadius(), tHit))
             {
                 if (tHit < lastHit)
-                    nearManager = manager;
-                std::cout << "tHit: " << tHit << std::endl;
+                {
+                    nearManager = &manager; // Keep an eye on this
+                    lastHit = tHit;
+                    //std::cout << "tHit: " << tHit << std::endl;
+                }
             }
-
         }
         if (nearManager)
             nearManager->setIsSelected(1);
 
-        for (unsigned int i = 0; i < renderer.r_renderList.size(); i++)
+        for (auto& manager : renderer.r_renderList)
         {
-            RenderTarget rTarget = renderer.r_renderList[i];
-            ModelManager* manager = rTarget.rt_manager;
+            checkState(manager);
 
-            checkState(&rTarget);
-
-            if (manager->getIsManipulating())
-                manager->move(&camera);
+            if (manager.getIsManipulating())
+                manager.move(camera);
         }
 
         if (skyboxDraw)
@@ -307,15 +301,14 @@ int main()
             //glDepthMask(GL_TRUE);
             //glDepthFunc(GL_LESS);
         }
+
         renderer.draw();
 
-
-
         //std::cout << "Sphere center: ("
-        //    << model1.manager->getPosition().x << ", "
-        //    << model1.manager->getPosition().y << ", "
-        //    << model1.manager->getPosition().z << ") radius: "
-        //    << model1.manager->getNewRadius() << std::endl;
+        //    << model1.manager.getPosition().x << ", "
+        //    << model1.manager.getPosition().y << ", "
+        //    << model1.manager.getPosition().z << ") radius: "
+        //    << model1.manager.getNewRadius() << std::endl;
         //
         //std::cout << "Ray origin: ("
         //    << rayOrigin.x << ", "
@@ -464,37 +457,12 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     yScroll = yoffset * scrollSensitivity;
 }
 
-void checkState(RenderTarget* rt)
+void checkState(ModelManager& manager)
 {
-    ModelManager* manager = rt->rt_manager;
-    manager->setIsManipulating(mouseLeft && manager->getIsSelected());
-    manager->setRotationOn(mouseLeft && !spacePress);
-    manager->setTranslationOn(mouseLeft && spacePress);
-    manager->setScaleOn(mouseLeft && scrolling);
-}
-
-void checkTheta(RenderTarget* rt)
-{
-    ModelManager* manager = rt->rt_manager;
-    glm::vec3 viewDir = glm::normalize(camera.cameraPos - manager->getPosition());
-    float theta = glm::dot(viewDir, glm::normalize(-camera.cameraFront));
-
-    if (theta > 0.90f)
-    {
-        if (!isSelected)
-        {
-            manager->setIsSelected(1);
-            isSelected = 1;
-        }
-    }
-    else
-    {
-        if (!isHolding)
-        {
-            manager->setIsSelected(0);
-            isSelected = 0;
-        }
-    }
+    manager.setIsManipulating(mouseLeft && manager.getIsSelected());
+    manager.setRotationOn(mouseLeft && !spacePress);
+    manager.setTranslationOn(mouseLeft && spacePress);
+    manager.setScaleOn(mouseLeft && scrolling);
 }
 
 
@@ -522,16 +490,16 @@ void getFramerate(GLFWwindow *window)
     }
 }
 
-RenderTarget createRenderTarget(Model* model, Shader* shader)
-{
-    RenderTarget rt;
-    rt.rt_VAO = model->getVAO();
-    rt.rt_shader = shader;
-    rt.rt_manager = &model->manager;
-    rt.rt_meshes = model->getMeshes();
-
-    return rt;
-}
+//RenderTarget createRenderTarget(Model* model, Shader* shader)
+//{
+//    RenderTarget rt;
+//    rt.rt_VAO = model->getVAO();
+//    rt.rt_shader = shader;
+//    rt.rt_manager = &model->manager;
+//    rt.rt_meshes = model->getMeshes();
+//
+//    return rt;
+//}
 
 bool intersectRaySphere(const glm::vec3 &rayOrigin, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& tHit)
 {
@@ -556,7 +524,7 @@ bool intersectRaySphere(const glm::vec3 &rayOrigin, const glm::vec3& rayDir, con
         return false;
     // If valid intersection found, return the distance along the ray
     tHit = t;
-    return true;
+    return true;    
 }
 
 

@@ -1,26 +1,28 @@
 #include <glad/glad.h>
 #include <iostream>
+#include <GLFW/glfw3.h>
 
 #include "model.h"
 #include "stb_image.h"
 #include "constants.h"
 
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+
 unsigned int textureFromFile(const char* str, std::string directory);
 std::vector<Texture> Model::texturesLoaded;
-unsigned int ModelManager::m_id = 0;
-TexturesBound ModelManager::m_tBound;
 
 Model::Model(std::string filePath, bool flipUVs)
 {
-	ModelManager::m_id++;
-	manager.id = ModelManager::m_id;
-
 	this->flipUVs = flipUVs;
 	texturesLoaded.reserve(1);
 	texturesLoaded.emplace_back(Texture{textureFromFile("defaultTex_diffuse.png", "textures"), "texture_diffuse", "textures/defaultTex_diffuse.png"});
 
 	loadModelFromFile(filePath);
 	sendDataToBuffers();
+
+	std::cout << "Model VAO: " << getVAO() << ", meshes: " << getMeshes().size() 
+			  << "\n___________________________________________________________________________________________________________________" << std::endl;
 }
 
 void Model::loadModelFromFile(const std::string& filePath)
@@ -51,11 +53,10 @@ void Model::loadModelFromFile(const std::string& filePath)
 			aiProcess_SortByPType);
 	}
 
-	//	float start = glfwGetTime();
-	//const aiScene* scene = importer.ReadFile(filePath,
-	//	aiProcess_Triangulate |
-	//	aiProcess_FlipUVs
-	//	);
+	// Find folder containing import file
+	directory = filePath.substr(0, filePath.find_last_of('/')); // "models/Backpack/backpack.obj" for example, the directory would be "models/Backpack"
+	std::cout << "___________________________________________________________________________________________________________________\n" <<
+		"|" << directory.substr(0, filePath.find_last_of('/')) << '|' << std::endl;
 
 	float finish = glfwGetTime();
 	std::cout << "                                                          Assimp import load time: " << finish - start << std::endl;
@@ -69,17 +70,11 @@ void Model::loadModelFromFile(const std::string& filePath)
 		return;
 	}
 
-	// Find folder containing import file
-	directory = filePath.substr(0, filePath.find_last_of('/')); // "models/Backpack/backpack.obj" for example, the directory would be "models/Backpack"
-
 	// DEBUG
 	//std::cout << "Model loaded from file" << std::endl;
 	//std::cout << "Meshes: " << scene->mNumMeshes << "\n";
 	//std::cout << "Materials: " << scene->mNumMaterials << "\n";
 	//std::cout << "Root node name: " << scene->mRootNode->mName.C_Str() << "\n";
-	
-	// If the number of textures we would bind would exceed the texture units available
-	
 
 	// On successful load, process nodes recursively
 	processNode(scene->mRootNode, scene);
@@ -245,8 +240,6 @@ void Model::sendDataToBuffers()
 		vertexOffset  += meshVertices.size();
 	}
 	std::cout << "Radius: " << radius << std::endl;
-	manager.setPosition(center);
-	manager.setRadius(radius);
 
 	// Sending data to GPU
 	VAO.bind();
@@ -254,106 +247,6 @@ void Model::sendDataToBuffers()
 	EBO.addData(iData.data(), iData.size() * sizeof(unsigned int));
 	VAO.setLayout();
 	VAO.unbind();
-}
-
-void Model::draw(Shader shader)
-{
-	shader.use();
-
-	VAO.bind();
-
-	// Bind active textures
-	if (manager.getFirstDraw())
-	{
-		//std::cout << "firstDraw" << std::endl;
-		shader.setInt("u_texture_diffuse", 0);
-		shader.setInt("u_texture_specular", 1);
-		shader.setInt("u_texture_normal", 2);
-		manager.setFirstDraw(0);
-	}
-
-	for (unsigned int i = 0; i < meshes.size(); i++)
-	{
-
-		finalChecks(shader, meshes[i]);
-		
-		shader.setMat4("model", manager.getModelMatrix());
-		shader.setMat3("normalMatrix", manager.getNormalMatrix());
-
-		glDrawElementsBaseVertex(GL_TRIANGLES, meshes[i].getIndicesCount(), GL_UNSIGNED_INT, (void*)meshes[i].getIndicesStart(), meshes[i].getBaseVertex());
-	}
-}
-
-void Model::finalChecks(Shader shader, Mesh mesh)
-{
-	// Texture checking
-	TexturesBound mBound = { mesh.getTexIds().ti_diffuse, mesh.getTexIds().ti_specular, mesh.getTexIds().ti_normal};
-	TexturesBound tBound = manager.getTexturesBound();
-
-	// If Any textures are different, rebind all three
-	if (tBound.diff != mBound.diff || tBound.spec != mBound.spec || tBound.norm != mBound.norm)
-	{
-		unsigned int ids[3] = { mesh.getTexIds().ti_diffuse, mesh.getTexIds().ti_specular, mesh.getTexIds().ti_normal };
-		glBindTextures(0, 3, ids);
-		manager.setTexturesBound({ mBound });
-	}
-
-	// Material properties checking
-	MaterialProperties mProps = mesh.getMaterialProps();
-	MaterialColors mCols = mesh.getMaterialCols();
-	MaterialProperties matPropSet = manager.getMatPropSet();
-	MaterialColors matColSet = manager.getMatColSet();
-
-	if (matPropSet.shininess != mProps.shininess || matPropSet.opacity != mProps.opacity)
-	{
-		shader.setFloat("u_matProps.shininess", mProps.shininess);
-		shader.setFloat("u_matProps.opacity", mProps.opacity);
-		matPropSet.shininess = mProps.shininess;
-		matPropSet.opacity = mProps.opacity;
-	}
-
-	// Material colors checking
-	if (matColSet.color_ambient != mCols.color_ambient)
-	{
-		shader.setVec3("u_matCols.ambient", mCols.color_ambient);
-		matColSet.color_ambient = mCols.color_ambient;
-	}
-
-	if (matColSet.color_diffuse != mCols.color_diffuse)
-	{
-		shader.setVec3("u_matCols.diffuse", mCols.color_diffuse);
-		matColSet.color_diffuse = mCols.color_diffuse;
-	}
-
-	if (matColSet.color_specular != mCols.color_specular)
-	{
-		shader.setVec3("u_matCols.specular", mCols.color_specular);
-		matColSet.color_specular = mCols.color_specular;
-	}
-
-	if (matColSet.color_emissive != mCols.color_emissive)
-	{
-		shader.setVec3("u_matCols.emissive", mCols.color_emissive);
-		matColSet.color_emissive = mCols.color_emissive;
-	}
-
-	if (matColSet.color_transparent != mCols.color_transparent)
-	{
-		shader.setVec3("u_matCols.transparent", mCols.color_transparent);
-		matColSet.color_transparent = mCols.color_transparent;
-	}
-
-	manager.setMatPropSet(matPropSet);
-	manager.setMatColSet(matColSet);
-
-	if (manager.getHasMoved())
-	{
-		shader.setMat4("model", manager.getModelMatrix());
-		shader.setMat3("normalMatrix", manager.getNormalMatrix());
-		manager.setHasMoved(0);
-	}
-
-	return;
 }
 
 unsigned int Model::textureFromFile(const char* str, std::string directory)
@@ -400,7 +293,6 @@ unsigned int Model::textureFromFile(const char* str, std::string directory)
 		std::cout << "Failed to load texture at: " << "\"" << path << "\"" << std::endl;
 		stbi_image_free(data);
 	}
-	std::cout << texId << std::endl;
 	return texId;
 }
 
