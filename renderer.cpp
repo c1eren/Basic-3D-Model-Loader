@@ -117,7 +117,7 @@ void Renderer::drawNoStencil()
             //std::cout << "Model has moved: " << it.getRadius() << std::endl;
         }
 
-        if (it.getIsSelected())
+        if (it.getIsSelected() && !it.getIsManipulating() && !it.getIsGrabbed())
             it.shader.setInt("u_outline", 1);
         else
             it.shader.setInt("u_outline", 0);
