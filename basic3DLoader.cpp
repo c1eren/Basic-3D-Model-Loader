@@ -29,6 +29,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 void getFramerate(GLFWwindow* window);
 unsigned int textureFromFile(const char* str, std::string directory);
+void printVec3(std::string text, glm::vec3 vector);
 
 //RenderTarget createRenderTarget(Model* model, Shader* shader);
 bool intersectRaySphere(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& tHit);
@@ -123,12 +124,16 @@ int main()
     //renderer.createRenderTarget(model3, modelShader);
 
     ModelManager planet(model1, modelShader);
-    ModelManager house(model2, modelShader);
+    //ModelManager house(model2, modelShader);
     ModelManager backpack(model3, modelShader);
+
+    //printVec3("House position", house.getPosition());
+    //printVec3("Planet position", planet.getPosition());
 
     renderer.r_renderList.push_back(planet);
     renderer.r_renderList.push_back(backpack);
-    renderer.r_renderList.push_back(house);
+    //renderer.r_renderList.push_back(house);
+
 
     // Cubemap faces
     std::vector<std::string> bigBlue_faces = {
@@ -235,30 +240,35 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
+        std::cout << "Start loop" << std::endl;
+
         //glClearColor(0.4, 0.75, 0.60, 1.0);
-        glClearColor(0.0, 0.0, 0.0, 1.0);
+        glClearColor(0.37, 0.37, 0.38, 1.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//| GL_STENCIL_BUFFER_BIT);
         //glStencilMask(0x00); // Don't update stencil drawing other stuff
 
         smallSphere.draw(crosshairShader);
+        std::cout << "Crosshair draw" << std::endl;
 
         for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
         {
-            pLDiffuse = glm::vec3(sin(currentFrame));
-            lightShader.setVec3("u_lightColor", pLDiffuse);
-            modelShader.setVec3("u_lightSource[0].position", pLDiffuse);
+            pLPosition[i] = glm::vec3(sin(currentFrame));
             glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, pLDiffuse);
+            model = glm::translate(model, pLPosition[i]);
             lightShader.setMat4("model", model);
             sphere.draw(lightShader);
+            std::cout << "Sphere draw" << std::endl;
         }
+        // Save all shader variables and send them at the end in batches 
 
         if (camera.hasMoved)
         {
             glm::mat4 view = camera.getViewMatrix();
             modelShader.setMat4("view", view);
             lightShader.setMat4("view", view);
-            skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));    // Eliminating translation factor from mat4
+            if (skyboxDraw)
+                skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));    // Eliminating translation factor from mat4
+            std::cout << "Camera move" << std::endl;
         }
         
         // Model handling WIP
@@ -290,7 +300,9 @@ int main()
             checkState(manager);
 
             if (manager.getIsManipulating())
+            {
                 manager.move(camera);
+            }
         }
 
         if (skyboxDraw)
@@ -298,11 +310,18 @@ int main()
             //glDepthFunc(GL_LEQUAL);
             //glDepthMask(GL_FALSE);
             skybox.draw(skyboxShader);
+            std::cout << "Skybox draw" << std::endl;
             //glDepthMask(GL_TRUE);
             //glDepthFunc(GL_LESS);
         }
 
+        for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
+        {
+            modelShader.setVec3("u_lightSource[0].position", pLPosition[i]);
+        }
         renderer.draw();
+        std::cout << "Models draw" << std::endl;
+
 
         //std::cout << "Sphere center: ("
         //    << model1.manager.getPosition().x << ", "
@@ -331,6 +350,10 @@ int main()
         //------------------------------------------------
 
         getFramerate(window); // Important, also gets delta for camera, TODO separate this logic
+        
+        std::cout << "End loop" << std::endl;
+        std::cout << "Shader binds per loop: " << Shader::s_shaderBindsPerLoop << std::endl;
+        Shader::s_shaderBindsPerLoop = 0;
     }
 
     /*#####################################################################################################################################################*/
@@ -525,6 +548,11 @@ bool intersectRaySphere(const glm::vec3 &rayOrigin, const glm::vec3& rayDir, con
     // If valid intersection found, return the distance along the ray
     tHit = t;
     return true;    
+}
+
+void printVec3(std::string text, glm::vec3 vector)
+{
+    std::cout << text << ": (" << vector.x << ", " << vector.y << ", " << vector.z << ")" << std::endl;
 }
 
 

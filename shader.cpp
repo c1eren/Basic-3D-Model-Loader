@@ -8,6 +8,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 unsigned int Shader::s_currentlyBoundId = 0;
+unsigned int Shader::s_shaderBindsPerLoop = 0;
 
 Shader::Shader(const char* vertexSourcePath, const char* fragmentSourcePath)
 {
@@ -271,5 +272,7 @@ void Shader::use()
 	{
 		glUseProgram(m_programID);
 		Shader::s_currentlyBoundId = m_programID;
+		Shader::s_shaderBindsPerLoop++;
+		std::cout << "Shader rebind: " << m_programID << std::endl;
 	}
 }

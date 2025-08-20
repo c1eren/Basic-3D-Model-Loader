@@ -101,7 +101,7 @@ private:
 	bool m_firstDraw	  = 1;
 	bool m_isManipulating = 0;
 	bool m_rebindRequired = 0;
-	bool m_hasMoved		  = 1;
+	bool m_hasMoved		  = 0;
 	bool m_rotationOn	  = 0;
 	bool m_translationOn  = 0;
 	bool m_scaleOn		  = 0;

@@ -106,6 +106,8 @@ void Renderer::drawNoStencil()
             it.shader.setInt("u_texture_diffuse", 0);
             it.shader.setInt("u_texture_specular", 1);
             it.shader.setInt("u_texture_normal", 2);
+            it.shader.setMat4("model", glm::mat4(1.0f));
+
             it.setFirstDraw(0);
         }
 
@@ -151,7 +153,7 @@ void Renderer::checkTextureBindings(Mesh& mesh)
         r_checklist.cl_diffuse  = textureIds[0];
         r_checklist.cl_specular = textureIds[1];
         r_checklist.cl_normal   = textureIds[2];
-        std::cout << "texture change" << std::endl;
+        //std::cout << "texture change" << std::endl;
     }
 }
 
