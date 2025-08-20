@@ -30,6 +30,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void getFramerate(GLFWwindow* window);
 unsigned int textureFromFile(const char* str, std::string directory);
 void printVec3(std::string text, glm::vec3 vector);
+void printMat4(std::string text, glm::mat4 matrix);
 
 //RenderTarget createRenderTarget(Model* model, Shader* shader);
 bool intersectRaySphere(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& tHit);
@@ -124,15 +125,18 @@ int main()
     //renderer.createRenderTarget(model3, modelShader);
 
     ModelManager planet(model1, modelShader);
-    //ModelManager house(model2, modelShader);
+    ModelManager house(model2, modelShader);
     ModelManager backpack(model3, modelShader);
 
+    house.setModelMatrix(glm::scale(glm::translate(house.getModelMatrix(), glm::vec3(10.0f)), glm::vec3(0.10f)));
     //printVec3("House position", house.getPosition());
     //printVec3("Planet position", planet.getPosition());
 
     renderer.r_renderList.push_back(planet);
     renderer.r_renderList.push_back(backpack);
-    //renderer.r_renderList.push_back(house);
+    renderer.r_renderList.push_back(house);
+
+    printMat4("Planet matrix", planet.getModelMatrix());
 
 
     // Cubemap faces
@@ -240,7 +244,7 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
-        std::cout << "Start loop" << std::endl;
+        //std::cout << "Start loop" << std::endl;
 
         //glClearColor(0.4, 0.75, 0.60, 1.0);
         glClearColor(0.37, 0.37, 0.38, 1.0);
@@ -248,7 +252,7 @@ int main()
         //glStencilMask(0x00); // Don't update stencil drawing other stuff
 
         smallSphere.draw(crosshairShader);
-        std::cout << "Crosshair draw" << std::endl;
+        //std::cout << "Crosshair draw" << std::endl;
 
         for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
         {
@@ -257,7 +261,7 @@ int main()
             model = glm::translate(model, pLPosition[i]);
             lightShader.setMat4("model", model);
             sphere.draw(lightShader);
-            std::cout << "Sphere draw" << std::endl;
+            //std::cout << "Sphere draw" << std::endl;
         }
         // Save all shader variables and send them at the end in batches 
 
@@ -268,32 +272,35 @@ int main()
             lightShader.setMat4("view", view);
             if (skyboxDraw)
                 skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));    // Eliminating translation factor from mat4
-            std::cout << "Camera move" << std::endl;
+            //std::cout << "Camera move" << std::endl;
         }
         
-        // Model handling WIP
-        glm::vec3 rayOrigin = camera.cameraPos;
-        glm::vec3 rayDir = camera.cameraFront;
-        float lastHit = 100.0f;
-        ModelManager* nearManager = nullptr;
-
-        for (auto& manager : renderer.r_renderList) 
+        if (!isHolding)
         {
-            manager.setIsSelected(0);
-            float tHit = 0.0f;
+            // Model handling WIP
+            glm::vec3 rayOrigin = camera.cameraPos;
+            glm::vec3 rayDir = camera.cameraFront;
+            float lastHit = 100.0f;
+            ModelManager* nearManager = nullptr;
 
-            if (intersectRaySphere(rayOrigin, rayDir, manager.getPosition(), manager.getNewRadius(), tHit))
+            for (auto& manager : renderer.r_renderList)
             {
-                if (tHit < lastHit)
+                manager.setIsSelected(0);
+                float tHit = 0.0f;
+
+                if (intersectRaySphere(rayOrigin, rayDir, manager.getPosition(), manager.getNewRadius(), tHit))
                 {
-                    nearManager = &manager; // Keep an eye on this
-                    lastHit = tHit;
-                    //std::cout << "tHit: " << tHit << std::endl;
+                    if (tHit < lastHit)
+                    {
+                        nearManager = &manager; // Keep an eye on this
+                        lastHit = tHit;
+                        //std::cout << "tHit: " << tHit << std::endl;
+                    }
                 }
             }
+            if (nearManager)
+                nearManager->setIsSelected(1);
         }
-        if (nearManager)
-            nearManager->setIsSelected(1);
 
         for (auto& manager : renderer.r_renderList)
         {
@@ -310,7 +317,7 @@ int main()
             //glDepthFunc(GL_LEQUAL);
             //glDepthMask(GL_FALSE);
             skybox.draw(skyboxShader);
-            std::cout << "Skybox draw" << std::endl;
+            //std::cout << "Skybox draw" << std::endl;
             //glDepthMask(GL_TRUE);
             //glDepthFunc(GL_LESS);
         }
@@ -320,41 +327,42 @@ int main()
             modelShader.setVec3("u_lightSource[0].position", pLPosition[i]);
         }
         renderer.draw();
-        std::cout << "Models draw" << std::endl;
-
-
-        //std::cout << "Sphere center: ("
-        //    << model1.manager.getPosition().x << ", "
-        //    << model1.manager.getPosition().y << ", "
-        //    << model1.manager.getPosition().z << ") radius: "
-        //    << model1.manager.getNewRadius() << std::endl;
-        //
-        //std::cout << "Ray origin: ("
-        //    << rayOrigin.x << ", "
-        //    << rayOrigin.y << ", "
-        //    << rayOrigin.z << ") dir: ("
-        //    << rayWorld.x << ", "
-        //    << rayWorld.y << ", "
-        //    << rayWorld.z << ")" << std::endl;
+        //std::cout << "Models draw" << std::endl;
 
         glfwSwapBuffers(window);
 
         mouseLeft = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
-        if (mouseLeft && spacePress)
-            isHolding = 1;
-        else
-            isHolding = 0;
 
         glfwPollEvents();
 
+        
         //------------------------------------------------
 
         getFramerate(window); // Important, also gets delta for camera, TODO separate this logic
         
-        std::cout << "End loop" << std::endl;
-        std::cout << "Shader binds per loop: " << Shader::s_shaderBindsPerLoop << std::endl;
+        //std::cout << "End loop" << std::endl;
+        //std::cout << "Shader binds per loop: " << Shader::s_shaderBindsPerLoop << std::endl;
         Shader::s_shaderBindsPerLoop = 0;
+
+        if (mouseLeft)
+            isHolding = 1;
+        else
+            isHolding = 0;
     }
+
+    //std::cout << "Sphere center: ("
+    //    << model1.manager.getPosition().x << ", "
+    //    << model1.manager.getPosition().y << ", "
+    //    << model1.manager.getPosition().z << ") radius: "
+    //    << model1.manager.getNewRadius() << std::endl;
+    //
+    //std::cout << "Ray origin: ("
+    //    << rayOrigin.x << ", "
+    //    << rayOrigin.y << ", "
+    //    << rayOrigin.z << ") dir: ("
+    //    << rayWorld.x << ", "
+    //    << rayWorld.y << ", "
+    //    << rayWorld.z << ")" << std::endl;
 
     /*#####################################################################################################################################################*/
         // RENDER LOOP
@@ -555,6 +563,21 @@ void printVec3(std::string text, glm::vec3 vector)
     std::cout << text << ": (" << vector.x << ", " << vector.y << ", " << vector.z << ")" << std::endl;
 }
 
+void printMat4(std::string text, glm::mat4 matrix)
+{
+    std::string output;
+        for (int row = 0; row < 4; ++row)
+        {
+            output += "[ ";
+            for (int col = 0; col < 4; ++col)
+            {
+                output += std::to_string(matrix[col][row]); // Column-major access
+                if (col < 3) output += ", ";
+            }
+            output += " ]\n";
+        }
+        std::cout << text << ":\n" << output << std::endl;
+}
 
 /*
 *______________________________________________________________________________________________________________________________________________________________________________________

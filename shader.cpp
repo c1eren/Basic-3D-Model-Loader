@@ -273,6 +273,6 @@ void Shader::use()
 		glUseProgram(m_programID);
 		Shader::s_currentlyBoundId = m_programID;
 		Shader::s_shaderBindsPerLoop++;
-		std::cout << "Shader rebind: " << m_programID << std::endl;
+		//std::cout << "Shader rebind: " << m_programID << std::endl;
 	}
 }

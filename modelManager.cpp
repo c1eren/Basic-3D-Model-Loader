@@ -3,8 +3,6 @@
 
 void ModelManager::move(Camera& camera)
 {
-    if (m_isSelected)
-    {
         if (m_isManipulating)
         {
             glm::mat4 model(1.0f);
@@ -58,6 +56,5 @@ void ModelManager::move(Camera& camera)
         }
         xVelocity = 0.0f;
         yVelocity = 0.0f;
-        yScroll = 0.0f;
-    }   
+        yScroll = 0.0f;  
 }

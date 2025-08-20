@@ -111,6 +111,17 @@ void Renderer::drawNoStencil()
             it.setFirstDraw(0);
         }
 
+        if (it.getHasMoved())
+        {
+            it.shader.setMat4("model", it.getModelMatrix());
+            //std::cout << "Model has moved: " << it.getRadius() << std::endl;
+        }
+
+        if (it.getIsSelected())
+            it.shader.setInt("u_outline", 1);
+        else
+            it.shader.setInt("u_outline", 0);
+
         for (unsigned int j = 0; j < it.model.getMeshes().size(); j++)
         {
             Mesh& mesh = it.model.getMeshes()[j];
@@ -123,17 +134,12 @@ void Renderer::drawNoStencil()
             unsigned int indicesStart = mesh.getIndicesStart();
             unsigned int inBaseVertex = mesh.getBaseVertex();
 
-            if(it.getHasMoved())
-                it.shader.setMat4("model", it.getModelMatrix());
-
-            if (it.getIsSelected())
-                it.shader.setInt("u_outline", 1);
-            else
-                it.shader.setInt("u_outline", 0);
+            it.shader.setMat4("model", it.getModelMatrix()); // Fix so we don't have to do this every loop
 
             glBindVertexArray(it.model.getVAO());
             glDrawElementsBaseVertex(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, (void*)indicesStart, inBaseVertex);
         }
+
         it.setHasMoved(0);
     }
 }
