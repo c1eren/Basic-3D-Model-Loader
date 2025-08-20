@@ -7,7 +7,9 @@ extern bool mouseLeft;
 extern bool spacePress;
 extern bool scrolling; 
 extern bool grabPress;
+extern bool alreadyGrabbing;
 extern bool isHolding;
+extern bool isSelection;
 
 extern double lastX;
 extern double lastY;

@@ -164,6 +164,11 @@
     </ClCompile>
     <ClCompile Include="vao.cpp" />
     <ClCompile Include="vbo.cpp" />
+    <None Include="state.md">
+      <SubType>
+      </SubType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="shaders\crosshair.frag" />
     <None Include="shaders\crosshair.vert" />
     <None Include="shaders\cubeMap.frag" />

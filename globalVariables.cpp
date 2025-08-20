@@ -7,7 +7,9 @@ bool mouseLeft = 0;
 bool spacePress = 0;
 bool scrolling = 0;
 bool grabPress = 0;
+bool alreadyGrabbing = 0;
 bool isHolding = 0;
+bool isSelection = 0;
 
 double lastX = 400;
 double lastY = 300;

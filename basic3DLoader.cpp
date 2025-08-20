@@ -299,7 +299,10 @@ int main()
                 }
             }
             if (nearManager)
+            {
                 nearManager->setIsSelected(1);
+                isSelection = 1;
+            }
         }
 
         for (auto& manager : renderer.r_renderList)
@@ -308,6 +311,11 @@ int main()
 
             if (manager.getIsManipulating())
             {
+                manager.move(camera);
+            }
+            if (manager.getIsGrabbed())
+            {
+                alreadyGrabbing = 1;
                 manager.move(camera);
             }
         }
@@ -348,6 +356,8 @@ int main()
             isHolding = 1;
         else
             isHolding = 0;
+
+        isSelection = 0;
     }
 
     //std::cout << "Sphere center: ("
@@ -432,10 +442,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
     {
-        if (!grabPress)
+        if (!grabPress && isSelection)
             grabPress = 1;
         else
+        {
             grabPress = 0;
+            alreadyGrabbing = 0;
+        }
     }
 
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
@@ -494,6 +507,13 @@ void checkState(ModelManager& manager)
     manager.setRotationOn(mouseLeft && !spacePress);
     manager.setTranslationOn(mouseLeft && spacePress);
     manager.setScaleOn(mouseLeft && scrolling);
+    
+    if (!alreadyGrabbing)
+        manager.setIsGrabbed(manager.getIsSelected() && grabPress);
+   // if (manager.getIsGrabbed())
+   //     manager.setIsGrabbed(grabPress);
+   // else
+   //      && !alreadyGrabbing);
 }
 
 
