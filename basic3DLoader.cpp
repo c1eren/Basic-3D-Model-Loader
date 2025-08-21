@@ -22,6 +22,7 @@
 #include "skybox.h"
 #include "sphere.h"
 #include "modelManager.h"
+#include "helperFunctions.h"
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -29,8 +30,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 void getFramerate(GLFWwindow* window);
 unsigned int textureFromFile(const char* str, std::string directory);
-void printVec3(std::string text, glm::vec3 vector);
-void printMat4(std::string text, glm::mat4 matrix);
+
 
 //RenderTarget createRenderTarget(Model* model, Shader* shader);
 bool intersectRaySphere(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& tHit);
@@ -578,26 +578,7 @@ bool intersectRaySphere(const glm::vec3 &rayOrigin, const glm::vec3& rayDir, con
     return true;    
 }
 
-void printVec3(std::string text, glm::vec3 vector)
-{
-    std::cout << text << ": (" << vector.x << ", " << vector.y << ", " << vector.z << ")" << std::endl;
-}
 
-void printMat4(std::string text, glm::mat4 matrix)
-{
-    std::string output;
-        for (int row = 0; row < 4; ++row)
-        {
-            output += "[ ";
-            for (int col = 0; col < 4; ++col)
-            {
-                output += std::to_string(matrix[col][row]); // Column-major access
-                if (col < 3) output += ", ";
-            }
-            output += " ]\n";
-        }
-        std::cout << text << ":\n" << output << std::endl;
-}
 
 /*
 *______________________________________________________________________________________________________________________________________________________________________________________

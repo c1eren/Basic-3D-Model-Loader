@@ -146,6 +146,7 @@
     <ClCompile Include="constants.cpp" />
     <ClCompile Include="ebo.cpp" />
     <ClCompile Include="globalVariables.cpp" />
+    <ClCompile Include="helperFunctions.cpp" />
     <ClCompile Include="model.cpp" />
     <ClCompile Include="modelManager.cpp" />
     <ClCompile Include="renderer.cpp" />
@@ -183,6 +184,7 @@
     <ClInclude Include="constants.h" />
     <ClInclude Include="ebo.h" />
     <ClInclude Include="globalVariables.h" />
+    <ClInclude Include="helperFunctions.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="modelManager.h" />

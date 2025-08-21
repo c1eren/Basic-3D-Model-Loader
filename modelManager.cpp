@@ -1,5 +1,7 @@
 #include "modelManager.h"
 #include "globalVariables.h"
+#include "helperFunctions.h"
+#include <iostream>
 
 void ModelManager::move(Camera& camera)
 {
@@ -32,9 +34,10 @@ void ModelManager::move(Camera& camera)
             glm::vec3 upVector = camera.cameraY;
 
             // TODO: Scale velocities by distance
-            //float factor = glm::max(glm::length(position - camera.cameraPos) / 100.0f, 0.002f);
-            rightVector *= (xVelocity);
-            upVector *= (yVelocity);
+            float factor = glm::clamp((glm::length(position - camera.cameraPos) / 100), 0.01f, 2.0f);
+            std::cout << "Factor: " << factor << std::endl;
+            rightVector *= (xVelocity * factor);
+            upVector *= (yVelocity * factor);
             position += (rightVector + upVector);
         }
 
