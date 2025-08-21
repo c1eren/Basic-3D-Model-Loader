@@ -35,7 +35,6 @@ void ModelManager::move(Camera& camera)
 
             // TODO: Scale velocities by distance
             float factor = glm::clamp((glm::length(position - camera.cameraPos) / 100), 0.01f, 2.0f);
-            std::cout << "Factor: " << factor << std::endl;
             rightVector *= (xVelocity * factor);
             upVector *= (yVelocity * factor);
             position += (rightVector + upVector);

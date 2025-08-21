@@ -14,6 +14,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "globalVariables.h"
+#include "windowManager.h"
 #include "renderer.h"
 #include "shader.h"
 #include "model.h"
@@ -48,54 +49,14 @@ Renderer renderer;
 
 int main()
 {
-    // Initialistion boilerplate
-    if (glfwInit() == NULL)
-    {
-        std::cout << "Window initialisation bungled mate" << std::endl;
-        return -1;
-    }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Model Loader 3D Basic 2025", nullptr, nullptr);
-    if (window == NULL)
-    {
-        std::cout << "Window create fail!" << std::endl;
-        return -1;
-    }
-
-    glfwMakeContextCurrent(window);
-
-    //this piece of code allows us to use OpenGL functions
-    //only call once in the main code
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cerr << "Failed to initialize GLAD" << std::endl;
-        return -1;
-    }
-
-    std::cout << glGetString(GL_VERSION) << std::endl; //printing the version 
-
-    /*
-    GLint nrAttributes;
-    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
-    std::cout << "Maximum nr of vertex attributes supported: " << nrAttributes << std::endl;
-
-    int maxTextures = 0;
-    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextures);
-    std::cout << "Max sampler2D units: " << maxTextures << std::endl; // 32 on this pc
-    */
-
-    //viewport
-    glViewport(0, 0, viewport_width, viewport_height);
+    WindowManager windowManager;
+    GLFWwindow* window = windowManager.window;
 
     //glfw callbacks
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    // Hide and capture cursor when application has focus
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // Shader
     Shader modelShader("shaders/modelShader.vert", "shaders/modelShader.frag");
@@ -108,7 +69,7 @@ int main()
     skyboxShader.setMat4("projection", projection);
     lightShader.setMat4("projection", projection);
 
-    float start = glfwGetTime();
+    double start = glfwGetTime();
 
     // Model
     Model model1("models/planet/planet.obj");
@@ -117,7 +78,7 @@ int main()
 
     //Model model1("models/Tree1/Tree1.obj");
     //Model model1("models/53-cottage_fbx/cottage_fbx.fbx");
-    float finish = glfwGetTime();
+    double finish = glfwGetTime();
 
     std::cout << "                                                            Total model load time: " << finish - start << std::endl;
     //renderer.createRenderTarget(model1, modelShader);
@@ -227,11 +188,12 @@ int main()
     //skyboxShader.setMat4("view", glm::mat4(glm::mat3(camera.getViewMatrix())));
 
     // Generate a sphere
-    Sphere sphere(100, 100, 0.1);
-    Sphere smallSphere(10, 10, 0.01);
+    Sphere sphere(100, 100, 0.1f);
+    Sphere smallSphere(10, 10, 0.01f);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+    glEnable(GL_CULL_FACE); // Keep an eye on this 
 
     //glEnable(GL_FRAMEBUFFER_SRGB);
 
@@ -247,7 +209,7 @@ int main()
         //std::cout << "Start loop" << std::endl;
 
         //glClearColor(0.4, 0.75, 0.60, 1.0);
-        glClearColor(0.37, 0.37, 0.38, 1.0);
+        glClearColor(0.37f, 0.37f, 0.38f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//| GL_STENCIL_BUFFER_BIT);
         //glStencilMask(0x00); // Don't update stencil drawing other stuff
 
@@ -274,7 +236,7 @@ int main()
                 skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));    // Eliminating translation factor from mat4
             //std::cout << "Camera move" << std::endl;
         }
-        
+
         if (!isHolding)
         {
             // Model handling WIP
@@ -343,11 +305,11 @@ int main()
 
         glfwPollEvents();
 
-        
+
         //------------------------------------------------
 
         getFramerate(window); // Important, also gets delta for camera, TODO separate this logic
-        
+
         //std::cout << "End loop" << std::endl;
         //std::cout << "Shader binds per loop: " << Shader::s_shaderBindsPerLoop << std::endl;
         Shader::s_shaderBindsPerLoop = 0;
@@ -358,22 +320,8 @@ int main()
             isHolding = 0;
 
         isSelection = 0;
+
     }
-
-    //std::cout << "Sphere center: ("
-    //    << model1.manager.getPosition().x << ", "
-    //    << model1.manager.getPosition().y << ", "
-    //    << model1.manager.getPosition().z << ") radius: "
-    //    << model1.manager.getNewRadius() << std::endl;
-    //
-    //std::cout << "Ray origin: ("
-    //    << rayOrigin.x << ", "
-    //    << rayOrigin.y << ", "
-    //    << rayOrigin.z << ") dir: ("
-    //    << rayWorld.x << ", "
-    //    << rayWorld.y << ", "
-    //    << rayWorld.z << ")" << std::endl;
-
     /*#####################################################################################################################################################*/
         // RENDER LOOP
     /*#####################################################################################################################################################*/
@@ -453,10 +401,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
     {
-        if (skyboxDraw)
-            skyboxDraw = 0;
-        else
-            skyboxDraw = 1;
+
     }
 
     /*
@@ -466,10 +411,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     */
 }
 
+//TODO: Fix this whole function
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-    xOffset = xpos - lastX;
-    yOffset = lastY - ypos;
+    xOffset = static_cast<float>(xpos - lastX);
+    yOffset = static_cast<float>(lastY - ypos);
 
     // TODO fix camera 
     if (!mouseLeft)
@@ -498,7 +444,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     scrolling = 1;
-    yScroll = yoffset * scrollSensitivity;
+    yScroll = static_cast<float>(yoffset) * scrollSensitivity;
 }
 
 void checkState(ModelManager& manager)
@@ -520,7 +466,7 @@ void checkState(ModelManager& manager)
 void getFramerate(GLFWwindow *window)
 {
     // Get Framerate
-    currentFrame = glfwGetTime();           // get current time 
+    currentFrame = static_cast<float>(glfwGetTime());           // get current time 
     deltaTime = currentFrame - lastFrame;   // difference between the time now, and the time it was when we rendered the last frame  
     lastFrame = currentFrame;
 
@@ -577,7 +523,6 @@ bool intersectRaySphere(const glm::vec3 &rayOrigin, const glm::vec3& rayDir, con
     tHit = t;
     return true;    
 }
-
 
 
 /*

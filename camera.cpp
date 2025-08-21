@@ -1,5 +1,7 @@
-#include "constants.h"
 #include "camera.h"
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "globalVariables.h"
 
 Camera::Camera(glm::vec3 camPosition, glm::vec3 camFront)
     : cameraPos(camPosition), cameraFront(camFront), camYaw(yaw), camPitch(pitch), camZoom(zoom), camSensitivity(sensitivity), camSpeed(0.0f)

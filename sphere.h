@@ -3,7 +3,7 @@
 #include <vector>
 #include "shader.h"
 
-const float PI = 3.14;
+const float PI = static_cast<float>(3.14);
 
 class Sphere {
 public:

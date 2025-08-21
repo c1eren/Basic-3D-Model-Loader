@@ -4,8 +4,7 @@
 
 #include "model.h"
 #include "stb_image.h"
-#include "constants.h"
-
+#include "globalVariables.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 

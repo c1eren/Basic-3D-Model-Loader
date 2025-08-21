@@ -441,3 +441,37 @@ the normal matrix on the CPU and send it to the shaders via a uniform before dra
             //    yVelocity = 0.0f;
             //    yScroll   = 0.0f;
             //}
+
+
+        //std::cout << "isHolding: " << isHolding
+        //          << "\nisSelection: " << isSelection
+        //          << "\nmouseLeft: " << mouseLeft
+        //          << "\nspacePress: " << spacePress
+        //          << "\nscrolling: " << scrolling
+        //          << "\ngrabPress: " << grabPress
+        //    << std::endl;
+    }
+
+    //std::cout << "Sphere center: ("
+    //    << model1.manager.getPosition().x << ", "
+    //    << model1.manager.getPosition().y << ", "
+    //    << model1.manager.getPosition().z << ") radius: "
+    //    << model1.manager.getNewRadius() << std::endl;
+    //
+    //std::cout << "Ray origin: ("
+    //    << rayOrigin.x << ", "
+    //    << rayOrigin.y << ", "
+    //    << rayOrigin.z << ") dir: ("
+    //    << rayWorld.x << ", "
+    //    << rayWorld.y << ", "
+    //    << rayWorld.z << ")" << std::endl;
+
+        /*
+    GLint nrAttributes;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
+    std::cout << "Maximum nr of vertex attributes supported: " << nrAttributes << std::endl;
+
+    int maxTextures = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextures);
+    std::cout << "Max sampler2D units: " << maxTextures << std::endl; // 32 on this pc
+    */

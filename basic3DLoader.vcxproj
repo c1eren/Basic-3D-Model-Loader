@@ -136,12 +136,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="basic3DLoader.cpp" />
-    <None Include="dump.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </None>
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="constants.cpp" />
     <ClCompile Include="ebo.cpp" />
@@ -165,6 +159,7 @@
     </ClCompile>
     <ClCompile Include="vao.cpp" />
     <ClCompile Include="vbo.cpp" />
+    <ClCompile Include="windowManager.cpp" />
     <None Include="state.md">
       <SubType>
       </SubType>
@@ -185,6 +180,7 @@
     <ClInclude Include="ebo.h" />
     <ClInclude Include="globalVariables.h" />
     <ClInclude Include="helperFunctions.h" />
+    <ClInclude Include="inputManager.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="modelManager.h" />
@@ -194,6 +190,7 @@
     <ClInclude Include="sphere.h" />
     <ClInclude Include="vao.h" />
     <ClInclude Include="vbo.h" />
+    <ClInclude Include="windowManager.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\basic.frag" />

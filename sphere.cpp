@@ -11,7 +11,7 @@ Sphere::Sphere(unsigned int stacks, unsigned int slices, float factor)
         float phi = V * PI;
 
         // loop through the slices.
-        for (int j = 0; j <= slices; ++j) {
+        for (unsigned int j = 0; j <= slices; ++j) {
 
             float U = (float)j / (float)slices;
             float theta = U * (PI * 2);
@@ -28,7 +28,7 @@ Sphere::Sphere(unsigned int stacks, unsigned int slices, float factor)
     }
 
     // Calc The Index Positions
-    for (int i = 0; i < slices * stacks + slices; ++i) {
+    for (unsigned int i = 0; i < slices * stacks + slices; ++i) {
         indices.push_back(GLuint(i));
         indices.push_back(GLuint(i + slices + 1));
         indices.push_back(GLuint(i + slices));
@@ -38,7 +38,7 @@ Sphere::Sphere(unsigned int stacks, unsigned int slices, float factor)
         indices.push_back(GLuint(i + 1));
     }
 
-    sphereIndexCount = indices.size();
+    sphereIndexCount = static_cast<unsigned int>(indices.size());
 
     // upload geometry to GPU.
     glGenVertexArrays(1, &sphereVAO);
