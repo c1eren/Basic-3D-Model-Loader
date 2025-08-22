@@ -1,7 +1,7 @@
 #include "globalVariables.h"
 
 int toggle = 0;
-bool skyboxDraw = 0;
+bool skyboxDraw = 1;
 
 bool mouseLeft = 0;
 bool spacePress = 0;

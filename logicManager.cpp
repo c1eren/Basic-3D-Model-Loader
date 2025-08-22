@@ -1,9 +1,10 @@
 #include "logicManager.h"
 
-LogicManager::LogicManager(Camera* camera, ActionManager* actionManager)
+LogicManager::LogicManager(Camera* camera, ActionManager* actionManager, WindowManager* windowManager)
 {
 	this->camera = camera;
 	this->actionManager = actionManager;
+    this->windowManager = windowManager;
 }
 
 void LogicManager::setActiveModel(ModelManager* activeModel)
@@ -13,8 +14,54 @@ void LogicManager::setActiveModel(ModelManager* activeModel)
 
 void LogicManager::updateLogic(float deltaTime)
 {
-	updateModelLogic(deltaTime);
+    updateApplicationLogic();
+    if (activeModel)
+    {
+        getModelState();
+        updateModelLogic(deltaTime);
+    }
 	updateCameraLogic(deltaTime);
+}
+
+void LogicManager::updateApplicationLogic()
+{
+    if (actionManager->isActionPressed(Action::SetWindowClose))
+        glfwSetWindowShouldClose(windowManager->m_window, true);
+}
+
+void LogicManager::getModelState()
+{
+    checkGrabbing();
+
+    bool leftClick    = actionManager->isMouseDown(Action::LeftClick);
+    bool spacePressed = actionManager->isActionDown(Action::MoveUp);
+    bool scrolling    = (actionManager->getMouseScrollY() != 0.0f);
+
+    if (activeModel && leftClick)
+        activeModel->setIsManipulating(true);
+    if (!leftClick)
+        activeModel->setIsManipulating(false);
+
+    activeModel->setRotationOn(leftClick && !spacePressed);
+    activeModel->setTranslationOn(leftClick && spacePressed);
+    activeModel->setScaleOn(leftClick && scrolling);
+}
+
+void LogicManager::checkGrabbing()
+{
+    if (actionManager->isActionPressed(Action::Grab))
+    {
+        if (!isGrabbing && activeModel)
+        {
+            isGrabbing = true;
+            activeModel->setIsGrabbed(true);
+        }
+        else if (isGrabbing)
+        {
+            isGrabbing = false;
+            activeModel->setIsGrabbed(false);
+        }
+    }
 }
 
 void LogicManager::updateModelLogic(float deltaTime)
@@ -71,7 +118,7 @@ void LogicManager::updateModelLogic(float deltaTime)
                 scale += yScroll * scale;
             else
                 scale += yScroll;
-            radius *= scale;
+            radius *= (scale /20);
         }
     }
 
@@ -93,28 +140,31 @@ void LogicManager::updateCameraLogic(float deltaTime)
 		return;
 
 	const float moveSpeed = 5.0f * deltaTime;
-	const float rotateSpd = 0.1f;
+	const float rotateSpd = 100.0f;
 	float yawDelta        = actionManager->getMouseMoveYaw();
 	float pitchDelta      = actionManager->getMouseMovePitch();
 
-	if (actionManager->isActionDown(Action::MoveForward))
-		camera->moveForward(moveSpeed);
-	if (actionManager->isActionDown(Action::MoveBackward))
-		camera->moveBackward(moveSpeed);
-	if (actionManager->isActionDown(Action::MoveLeft))
-		camera->moveLeft(moveSpeed);
-	if (actionManager->isActionDown(Action::MoveRight))
-		camera->moveRight(moveSpeed);
-	if (actionManager->isActionDown(Action::MoveUp))
-		camera->moveUp(moveSpeed);
-	if (actionManager->isActionDown(Action::MoveDown))
-		camera->moveDown(moveSpeed);
+    if (!activeModel || !activeModel->getIsManipulating())
+    {
+        if (actionManager->isActionDown(Action::MoveForward))
+            camera->moveForward(moveSpeed);
+        if (actionManager->isActionDown(Action::MoveBackward))
+            camera->moveBackward(moveSpeed);
+        if (actionManager->isActionDown(Action::MoveLeft))
+            camera->moveLeft(moveSpeed);
+        if (actionManager->isActionDown(Action::MoveRight))
+            camera->moveRight(moveSpeed);
+        if (actionManager->isActionDown(Action::MoveUp))
+            camera->moveUp(moveSpeed);
+        if (actionManager->isActionDown(Action::MoveDown))
+            camera->moveDown(moveSpeed);
 
-	if (yawDelta != 0.0f)
-		camera->rotateYaw(yawDelta * rotateSpd * deltaTime);
-	if (pitchDelta != 0.0f)
-		camera->rotatePitch(pitchDelta * rotateSpd * deltaTime);
+        if (yawDelta != 0.0f)
+            camera->rotateYaw(yawDelta * rotateSpd * deltaTime);
+        if (pitchDelta != 0.0f)
+            camera->rotatePitch(pitchDelta * rotateSpd * deltaTime);
 
-	if (camera->getHasRotated())
-		camera->updateCameraFrontVectors();
+        if (camera->getHasRotated())
+            camera->updateCameraFrontVectors();
+    }
 }

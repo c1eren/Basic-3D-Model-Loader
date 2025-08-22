@@ -16,6 +16,8 @@
 #include "globalVariables.h"
 #include "windowManager.h"
 #include "inputManager.h"
+#include "logicManager.h"
+#include "actionManager.h"
 #include "renderer.h"
 #include "shader.h"
 #include "model.h"
@@ -25,45 +27,32 @@
 #include "modelManager.h"
 #include "helperFunctions.h"
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
-void mouse_callback(GLFWwindow* window, double xpos, double ypos);
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-
 void getFramerate(GLFWwindow* window);
-unsigned int textureFromFile(const char* str, std::string directory);
-
 
 //RenderTarget createRenderTarget(Model* model, Shader* shader);
 bool intersectRaySphere(const glm::vec3& rayOrigin, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& tHit);
 
+// Literally the camera
+Camera camera;
 
-// UNDER CONSTRUCTION //
-
-
-void checkState(ModelManager& manager);
-
-// UNDER CONSTRUCTION //
-// 
 // Handles window code
 WindowManager windowManager;
 
 // Handles inputs and sends to middle layer
 InputManager inputManager(windowManager.m_window);
 
-// Handles modelManagers and takes data from middle layer
-Renderer renderer;
+// Turns input data into actions for the logic manager
+ActionManager actionManager;
 
-Camera camera();
+// Handles action requests from ActionManager and updates object data
+LogicManager logicManager(&camera, &actionManager, &windowManager);
+
+// Handles modelManagers and takes transformation data from LogicManager
+Renderer renderer;
 
 int main()
 {
     GLFWwindow* window = windowManager.m_window;
-
-    //glfw callbacks
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-
 
     // Shader
     Shader modelShader("shaders/modelShader.vert", "shaders/modelShader.frag");
@@ -220,35 +209,12 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//| GL_STENCIL_BUFFER_BIT);
         //glStencilMask(0x00); // Don't update stencil drawing other stuff
 
-        smallSphere.draw(crosshairShader);
-        //std::cout << "Crosshair draw" << std::endl;
+        inputManager.update();
+        glfwPollEvents();
 
-        for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
-        {
-            pLPosition[i] = glm::vec3(sin(currentFrame));
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, pLPosition[i]);
-            lightShader.setMat4("model", model);
-            sphere.draw(lightShader);
-            //std::cout << "Sphere draw" << std::endl;
-        }
-        // Save all shader variables and send them at the end in batches 
-
-        if (camera.hasMoved)
-        {
-            glm::mat4 view = camera.getViewMatrix();
-            modelShader.setMat4("view", view);
-            lightShader.setMat4("view", view);
-            if (skyboxDraw)
-                skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));    // Eliminating translation factor from mat4
-            //std::cout << "Camera move" << std::endl;
-        }
-
-        if (!isHolding)
-        {
             // Model handling WIP
-            glm::vec3 rayOrigin = camera.cameraPos;
-            glm::vec3 rayDir = camera.cameraFront;
+            glm::vec3 rayOrigin = camera.getCameraPos();
+            glm::vec3 rayDir = camera.getCameraFront();
             float lastHit = 100.0f;
             ModelManager* nearManager = nullptr;
 
@@ -269,24 +235,35 @@ int main()
             }
             if (nearManager)
             {
-                nearManager->setIsSelected(1);
+                logicManager.setActiveModel(nearManager);
                 isSelection = 1;
             }
-        }
 
-        for (auto& manager : renderer.r_renderList)
+            logicManager.updateLogic(deltaTime);
+
+
+        smallSphere.draw(crosshairShader);
+        //std::cout << "Crosshair draw" << std::endl;
+
+        for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
         {
-            checkState(manager);
+            pLPosition[i] = glm::vec3(sin(currentFrame));
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, pLPosition[i]);
+            lightShader.setMat4("model", model);
+            sphere.draw(lightShader);
+            //std::cout << "Sphere draw" << std::endl;
+        }
+        // Save all shader variables and send them at the end in batches 
 
-            if (manager.getIsManipulating())
-            {
-                manager.move(camera);
-            }
-            if (manager.getIsGrabbed())
-            {
-                alreadyGrabbing = 1;
-                manager.move(camera);
-            }
+        if (camera.getHasMoved())
+        {
+            glm::mat4 view = camera.getViewMatrix();
+            modelShader.setMat4("view", view);
+            lightShader.setMat4("view", view);
+            if (skyboxDraw)
+                skyboxShader.setMat4("view", glm::mat4(glm::mat3(view)));    // Eliminating translation factor from mat4
+            //std::cout << "Camera move" << std::endl;
         }
 
         if (skyboxDraw)
@@ -310,7 +287,6 @@ int main()
 
         mouseLeft = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
 
-        glfwPollEvents();
 
         //------------------------------------------------
 
@@ -337,136 +313,20 @@ int main()
     return 0;
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
-{
-    // When a user presses the escape key, we set the WindowShouldClose property to true, // closing the application
-
-    // Utility
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
-
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS)
-    {
-        if (toggle == 0)
-            toggle = 1;
-        else
-            toggle = 0;
-    }
-
-    // Camera
-    if (!mouseLeft)
-    {
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        {
-            camera.processKeyPress(Direction::FORWARD);
-        }
-        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        {
-            camera.processKeyPress(Direction::BACKWARD);
-        }
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        {
-            camera.processKeyPress(Direction::LEFT);
-        }
-        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        {
-            camera.processKeyPress(Direction::RIGHT);
-        }
-        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        {
-            camera.processKeyPress(Direction::UP);
-        }
-        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        {
-            camera.processKeyPress(Direction::DOWN);
-        }
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-    {
-        spacePress = 1;
-    }
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE)
-    {
-        spacePress = 0;
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
-    {
-        if (!grabPress && isSelection)
-            grabPress = 1;
-        else
-        {
-            grabPress = 0;
-            alreadyGrabbing = 0;
-        }
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
-    {
-
-    }
-
-    /*
-        void keyCallback (GLFWwindow\* wind, int key, int scancode, int action, int mods) {
-        my_input_class.keyCallback(wind, key, scancode, action, mods);
-        }
-    */
-}
-
-//TODO: Fix this whole function
-void mouse_callback(GLFWwindow* window, double xpos, double ypos)
-{
-    xOffset = static_cast<float>(xpos - lastX);
-    yOffset = static_cast<float>(lastY - ypos);
-
-    // TODO fix camera 
-    if (!mouseLeft)
-    {
-        if (camera.firstMouse)
-        {
-            camera.lastX = xpos;
-            camera.lastY = ypos;
-            camera.firstMouse = 0;
-        }
-        camera.updateEulerValues(xOffset, yOffset);
-    }
-    else
-    {
-        velocity = xOffset * rSensitivity;
-        xVelocity = xOffset * rSensitivity;
-        yVelocity = yOffset * rSensitivity;
-    }
-
-    lastX = xpos;
-    lastY = ypos;
-    camera.lastX = xpos;
-    camera.lastY = ypos;
-}
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-{
-    scrolling = 1;
-    yScroll = static_cast<float>(yoffset) * scrollSensitivity;
-}
-
-void checkState(ModelManager& manager)
-{
-    manager.setIsManipulating(mouseLeft && manager.getIsSelected());
-    manager.setRotationOn(mouseLeft && !spacePress);
-    manager.setTranslationOn(mouseLeft && spacePress);
-    manager.setScaleOn(mouseLeft && scrolling);
-    
-    if (!alreadyGrabbing)
-        manager.setIsGrabbed(manager.getIsSelected() && grabPress);
-   // if (manager.getIsGrabbed())
-   //     manager.setIsGrabbed(grabPress);
-   // else
-   //      && !alreadyGrabbing);
-}
+//void checkState(ModelManager& manager)
+//{
+//    manager.setIsManipulating(mouseLeft && manager.getIsSelected());
+//    manager.setRotationOn(mouseLeft && !spacePress);
+//    manager.setTranslationOn(mouseLeft && spacePress);
+//    manager.setScaleOn(mouseLeft && scrolling);
+//    
+//    if (!alreadyGrabbing)
+//        manager.setIsGrabbed(manager.getIsSelected() && grabPress);
+//   // if (manager.getIsGrabbed())
+//   //     manager.setIsGrabbed(grabPress);
+//   // else
+//   //      && !alreadyGrabbing);
+//}
 
 
 void getFramerate(GLFWwindow *window)
@@ -492,17 +352,6 @@ void getFramerate(GLFWwindow *window)
         previousTime = currentFrame;
     }
 }
-
-//RenderTarget createRenderTarget(Model* model, Shader* shader)
-//{
-//    RenderTarget rt;
-//    rt.rt_VAO = model->getVAO();
-//    rt.rt_shader = shader;
-//    rt.rt_manager = &model->manager;
-//    rt.rt_meshes = model->getMeshes();
-//
-//    return rt;
-//}
 
 bool intersectRaySphere(const glm::vec3 &rayOrigin, const glm::vec3& rayDir, const glm::vec3& sphereCenter, float sphereRadius, float& tHit)
 {

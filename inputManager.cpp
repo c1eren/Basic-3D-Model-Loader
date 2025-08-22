@@ -3,6 +3,17 @@
 std::unordered_map<int, bool> InputManager::s_keys;
 std::unordered_map<int, bool> InputManager::s_keysPressed;
 std::unordered_map<int, bool> InputManager::s_keysReleased;
+std::unordered_map<int, bool> InputManager::s_mouseButtons;
+std::unordered_map<int, bool> InputManager::s_mousePressed;
+std::unordered_map<int, bool> InputManager::s_mouseReleased;
+double InputManager::lastX = 0.0;
+double InputManager::lastY = 0.0;
+//double InputManager::mouseX  = 0.0;
+//double InputManager::mouseY  = 0.0;
+float InputManager::xOffset = 0.0f;
+float InputManager::yOffset = 0.0f;
+float InputManager::yScroll = 0.0f;
+bool InputManager::firstMouse = true;
 
 InputManager::InputManager(GLFWwindow* window) 
 {
@@ -11,14 +22,6 @@ InputManager::InputManager(GLFWwindow* window)
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
-
-	lastX   = 0.0;
-	lastY   = 0.0;
-	//mouseX  = 0.0;
-	//mouseY  = 0.0;
-	xOffset = 0.0f;
-	yOffset = 0.0f;
-	firstMouse = true;
 }
 
 void InputManager::update()
@@ -127,8 +130,8 @@ void InputManager::mouse_callback(GLFWwindow* window, double xpos, double ypos)
 		firstMouse = false;
 	}
 
-	xOffset = xpos - lastX;
-	yOffset = lastY - ypos;
+	xOffset = static_cast<float>(xpos - lastX);
+	yOffset = static_cast<float>(lastY - ypos);
 	lastX	= xpos;
 	lastY	= ypos;
 }

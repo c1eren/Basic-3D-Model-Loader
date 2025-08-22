@@ -11,7 +11,8 @@ enum class Action {
 	MoveUp,
 	MoveDown,
 	SetWindowClose,
-	LeftClick
+	LeftClick,
+	Grab
 };
 
 class ActionManager {
@@ -26,7 +27,7 @@ public:
 	bool isActionDown(Action action);
 
 	// Mouse actions
-	bool isMousePressed(Action action);
+	bool isMousePressed(Action action); // Keep an eye on this, might need its own enum class
 	bool isMouseDown(Action action);
 	float getMouseMoveYaw();
 	float getMouseMovePitch();
