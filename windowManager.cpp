@@ -23,14 +23,14 @@ int WindowManager::init()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
 
-    window = glfwCreateWindow(800, 600, "Model Loader 3D Basic 2025", nullptr, nullptr);
-    if (window == NULL)
+    m_window = glfwCreateWindow(800, 600, "Model Loader 3D Basic 2025", nullptr, nullptr);
+    if (m_window == NULL)
     {
         std::cout << "Window create fail!" << std::endl;
         return -1;
     }
 
-    glfwMakeContextCurrent(window);
+    glfwMakeContextCurrent(m_window);
 
     // Initialise GLAD
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -44,7 +44,7 @@ int WindowManager::init()
     glViewport(0, 0, viewport_width, viewport_height);
 
     // Hide and capture cursor when application has focus
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     return 0;
 }

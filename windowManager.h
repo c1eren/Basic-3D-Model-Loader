@@ -9,6 +9,6 @@ public:
 	int init();
 
 public:
-	GLFWwindow* window;
+	GLFWwindow* m_window;
 
 };

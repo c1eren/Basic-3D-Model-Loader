@@ -31,3 +31,17 @@
 
 	?I can't remember what this one is for?:
 		bool m_rebindRequired = 0;
+
+
+	Application
+ ├─ Window
+ ├─ Input
+ ├─ SceneManager
+ │   └─ Scene
+ │       ├─ Entities
+ │       │   └─ Model / Mesh / Material
+ │       └─ Lights
+ └─ Renderer
+     ├─ Shaders
+     ├─ Textures
+     └─ Camera

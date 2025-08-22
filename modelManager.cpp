@@ -12,6 +12,7 @@ void ModelManager::move(Camera& camera)
 
     if (m_isGrabbed)
     {
+        //TODO: factor by radius of object so object remains outside player
         position = camera.cameraPos + camera.cameraFront;
     }
     

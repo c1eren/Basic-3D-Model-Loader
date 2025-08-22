@@ -46,3 +46,15 @@ extern int windowHeight;
 
 // Sampler units
 extern unsigned int samplerCounter;
+
+//// Key presses
+//extern bool key_escape;
+//extern bool key_w;
+//extern bool key_a;
+//extern bool key_s;
+//extern bool key_d;
+//extern bool key_e;
+//extern bool key_p;
+//extern bool key_space;
+//extern bool key_leftShift;
+//extern bool key_leftShift;

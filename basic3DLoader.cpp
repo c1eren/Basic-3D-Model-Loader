@@ -15,6 +15,7 @@
 
 #include "globalVariables.h"
 #include "windowManager.h"
+#include "inputManager.h"
 #include "renderer.h"
 #include "shader.h"
 #include "model.h"
@@ -43,14 +44,21 @@ bool intersectRaySphere(const glm::vec3& rayOrigin, const glm::vec3& rayDir, con
 void checkState(ModelManager& manager);
 
 // UNDER CONSTRUCTION //
+// 
+// Handles window code
+WindowManager windowManager;
+
+// Handles inputs and sends to middle layer
+InputManager inputManager(windowManager.m_window);
+
+// Handles modelManagers and takes data from middle layer
+Renderer renderer;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, -1.0f));
-Renderer renderer;
 
 int main()
 {
-    WindowManager windowManager;
-    GLFWwindow* window = windowManager.window;
+    GLFWwindow* window = windowManager.m_window;
 
     //glfw callbacks
     glfwSetKeyCallback(window, key_callback);
@@ -304,7 +312,6 @@ int main()
         mouseLeft = (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT));
 
         glfwPollEvents();
-
 
         //------------------------------------------------
 

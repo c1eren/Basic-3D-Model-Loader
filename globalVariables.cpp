@@ -46,3 +46,15 @@ int windowHeight = 800;
 
 // Sampler units
 unsigned int samplerCounter = 1;
+
+//// Key presses
+//bool key_escape = 0;
+//bool key_w = 0;
+//bool key_a = 0;
+//bool key_s = 0;
+//bool key_d = 0;
+//bool key_e = 0;
+//bool key_p = 0;
+//bool key_space = 0;
+//bool key_leftShift = 0;
+//bool key_leftShift = 0;

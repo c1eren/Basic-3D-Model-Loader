@@ -135,12 +135,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="actionManager.cpp" />
     <ClCompile Include="basic3DLoader.cpp" />
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="constants.cpp" />
     <ClCompile Include="ebo.cpp" />
     <ClCompile Include="globalVariables.cpp" />
     <ClCompile Include="helperFunctions.cpp" />
+    <ClCompile Include="inputManager.cpp" />
+    <ClCompile Include="logicManager.cpp" />
     <ClCompile Include="model.cpp" />
     <ClCompile Include="modelManager.cpp" />
     <ClCompile Include="renderer.cpp" />
@@ -175,12 +178,14 @@
     <None Include="shaders\modelShader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="actionManager.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="ebo.h" />
     <ClInclude Include="globalVariables.h" />
     <ClInclude Include="helperFunctions.h" />
     <ClInclude Include="inputManager.h" />
+    <ClInclude Include="logicManager.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="model.h" />
     <ClInclude Include="modelManager.h" />
