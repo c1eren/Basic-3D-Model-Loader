@@ -2,37 +2,39 @@
 
 ActionManager::ActionManager()
 {
-	cameraActionKeyMap = {
-		{CameraAction::MoveForward,	 GLFW_KEY_W},
-		{CameraAction::MoveBackward, GLFW_KEY_S},
-		{CameraAction::MoveLeft,	 GLFW_KEY_A},
-		{CameraAction::MoveRight,	 GLFW_KEY_D},
-		{CameraAction::MoveUp,		 GLFW_KEY_SPACE},
-		{CameraAction::MoveDown,	 GLFW_KEY_LEFT_SHIFT}
+	actionKeyMap = {
+		{Action::MoveForward,	 GLFW_KEY_W},
+		{Action::MoveBackward,	 GLFW_KEY_S},
+		{Action::MoveLeft,		 GLFW_KEY_A},
+		{Action::MoveRight,		 GLFW_KEY_D},
+		{Action::MoveUp,		 GLFW_KEY_SPACE},
+		{Action::MoveDown,		 GLFW_KEY_LEFT_SHIFT},
+		{Action::SetWindowClose, GLFW_KEY_ESCAPE },
+		{Action::LeftClick,		 GLFW_MOUSE_BUTTON_LEFT}
 	};
-
 }
 
-bool ActionManager::isActionPressed(CameraAction action)
+bool ActionManager::isActionPressed(Action action)
 {
-	return InputManager::isKeyPressed(cameraActionKeyMap[action]);
+	return InputManager::isKeyPressed(actionKeyMap[action]);
 }
 
-bool ActionManager::isActionDown(CameraAction action)
+bool ActionManager::isActionDown(Action action)
 {
-	return InputManager::isKeyDown(cameraActionKeyMap[action]);
+	return InputManager::isKeyDown(actionKeyMap[action]);
 }
 
-bool ActionManager::isMouseYaw()
+bool ActionManager::isMousePressed(Action action)
 {
-	return InputManager::isMouseMovedYaw();
-}
+	return InputManager::isMousePressed(actionKeyMap[action]);
 
-bool ActionManager::isMousePitch()
+}
+bool ActionManager::isMouseDown(Action action)
 {
-	return InputManager::isMouseMovedPitch();
+	return InputManager::isMouseDown(actionKeyMap[action]);
 }
 
+// Send offset values through action manager 
 float ActionManager::getMouseMoveYaw()
 {
 	return InputManager::getMouseDeltaX();
@@ -41,5 +43,10 @@ float ActionManager::getMouseMoveYaw()
 float ActionManager::getMouseMovePitch()
 {
 	return InputManager::getMouseDeltaY();
+}
+
+float ActionManager::getMouseScrollY()
+{
+	return InputManager::getScrollY();
 }
 

@@ -3,23 +3,9 @@
 #include <glm/glm.hpp>
 #include "globalVariables.h"
 
-enum class Direction : unsigned char {
-	FORWARD,
-	BACKWARD,
-	LEFT,
-	RIGHT,
-	UP,
-	DOWN
-};
-
 // Defaults
 const float yaw = -90.0f;
 const float pitch = 0.0f;
-const float speed = 200.0f;
-const float sensitivity = 0.1f;
-const float zoom = 45.0f;
-const float maxSpeed = 200.0f;
-const float accelRate = 10.0f;
 
 const glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
 const glm::vec3 defaultPos(0.0f, 0.0f, 5.0f);
@@ -32,7 +18,7 @@ const unsigned int centerScreenY = (viewport_height / 2);
 class Camera {
 private:
 	glm::vec3 cameraPos = defaultPos;
-	glm::vec3 cameraFront = defaultFront;
+	glm::vec3 cameraZ = defaultFront;
 	glm::vec3 cameraX = defaultXY;
 	glm::vec3 cameraY = defaultXY;
 
@@ -44,10 +30,19 @@ private:
 
 
 	bool hasMoved = 1;
+	bool hasRotated = 1;
 
 public:
 	Camera();
 	~Camera() {}
+
+	// Get properties
+	bool getHasMoved();
+	bool getHasRotated();
+	glm::vec3 getCameraPos() const;
+	glm::vec3 getCameraFront() const;
+	glm::vec3 getCameraX() const;
+	glm::vec3 getCameraY() const;
 	
 	// Update position vector
 	void moveForward(const float speed);
@@ -59,26 +54,9 @@ public:
 
 	// Update Euler values
 	void rotateYaw(const float speed);
-	void rotatePitch(const float speed); // Can look at storing speed in camera 
-
-};
-
-	void updateEulerValues(float xoffset, float yoffset);
-
-	void processKeyPress(Direction dir);
-
-	void processMouseScroll(float yoffset);
-
+	void rotatePitch(const float speed); // Can look at storing speed in camera
 	void updateCameraFrontVectors();
 
 	glm::mat4 getViewMatrix();
-
-	glm::mat4 lookAT();
-
-	void setLastXY(float x, float y) { lastX = x; lastY = y; }
-
 };
-
-
-
 

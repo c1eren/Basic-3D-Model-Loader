@@ -20,7 +20,6 @@
 #include "shader.h"
 #include "model.h"
 #include "camera.h"
-#include "constants.h"
 #include "skybox.h"
 #include "sphere.h"
 #include "modelManager.h"

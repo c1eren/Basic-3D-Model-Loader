@@ -8,15 +8,45 @@ Camera::Camera()
     updateCameraFrontVectors();
 }
 
+bool Camera::getHasMoved()
+{
+    return hasMoved;
+}
+
+bool Camera::getHasRotated()
+{
+    return hasRotated;
+}
+
+glm::vec3 Camera::getCameraPos() const
+{
+    return cameraPos;
+}
+
+glm::vec3 Camera::getCameraFront() const
+{
+    return cameraZ;
+}
+
+glm::vec3 Camera::getCameraX() const
+{
+    return cameraX;
+}
+
+glm::vec3 Camera::getCameraY() const
+{
+    return cameraY;
+}
+
 void Camera::moveForward(const float speed)
 {
-    cameraPos += cameraFront * speed;
+    cameraPos += cameraZ * speed;
     hasMoved = 1;
 }
 
 void Camera::moveBackward(const float speed)
 {
-    cameraPos -= cameraFront * speed;
+    cameraPos -= cameraZ * speed;
     hasMoved = 1;
 }
 
@@ -44,75 +74,59 @@ void Camera::moveDown(const float speed)
     hasMoved = 1;
 }
 
-void Camera::rotateYaw(const float sensitivity)
+void Camera::rotateYaw(const float speed)
 {
-    yaw += xOffset * sensitivity;
+    yaw += speed;
+    hasRotated = 1;
 }
 
-void Camera::rotatePitch(const float sensitivity)
+void Camera::rotatePitch(const float speed)
 {
-    pitch += yOffset * sensitivity;
+    pitch += speed;
 
     // Pitch constraints
     if (pitch > 89.0f)
         pitch = 89.0f;
     if (pitch < -89.0f)
         pitch = -89.0f;
-}
-
-
-void Camera::processMouseScroll(float yoffset)
-{
-    camZoom -= yoffset / camSensitivity;
-
-    if (camZoom < 1.0f)
-        camZoom = 1.0f;
-    if (camZoom > 90.0f)
-        camZoom = 90.0f;
-}
-
-void Camera::updateEulerValues(float xoffset, float yoffset)
-{
-    hasMoved = 1;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-
-    yaw += xoffset;
-    pitch += yoffset;
-
-    // Pitch constraints
-    if (pitch > 89.0f)   
-        pitch = 89.0f;
-    if (pitch < -89.0f)
-        pitch = -89.0f;
-
-    updateCameraFrontVectors();
+    hasRotated = 1;
 }
 
 void Camera::updateCameraFrontVectors()
 {
     glm::vec3 direction;
+    const float yawRad   = glm::radians(yaw);
+    const float pitchRad = glm::radians(pitch);
 
-    direction.x = cos(glm::radians(camYaw)) * cos(glm::radians(camPitch));
-    direction.y = sin(glm::radians(camPitch));
-    direction.z = sin(glm::radians(camYaw)) * cos(glm::radians(camPitch));
+    direction.x = cos(yawRad) * cos(pitchRad);
+    direction.y = sin(pitchRad);
+    direction.z = sin(yawRad) * cos(pitchRad);
 
-    cameraFront = glm::normalize(direction);
-    cameraX = glm::normalize(glm::cross(cameraFront, worldUp));                 // Get perpendicular axis, relative to the camera in the world
-    cameraY = glm::normalize(glm::cross(cameraX, cameraFront)); 
+    cameraZ     = glm::normalize(direction);
+    cameraX     = glm::normalize(glm::cross(cameraZ, worldUp));
+    cameraY     = glm::normalize(glm::cross(cameraX, cameraZ));
 }
-
 
 glm::mat4 Camera::getViewMatrix()
 {
-    hasMoved = 0;
-    return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraY);
+    return glm::lookAt(cameraPos, cameraPos + cameraZ, cameraY);
 }
+
+
+//void Camera::processMouseScroll(float yoffset)
+//{
+//    camZoom -= yoffset / camSensitivity;
+//
+//    if (camZoom < 1.0f)
+//        camZoom = 1.0f;
+//    if (camZoom > 90.0f)
+//        camZoom = 90.0f;
+//}
 
 //glm::mat4 Camera::lookAT()
 //{
 //    // Get z,x,y axis 
-//    glm::vec3 cameraDirection = glm::normalize(-cameraFront); 
+//    glm::vec3 cameraDirection = glm::normalize(-cameraZ); 
 //    glm::vec3 cameraX         = glm::normalize(glm::cross(worldUp, cameraDirection));
 //    glm::vec3 cameraY         = glm::cross(cameraDirection, cameraX);
 //

@@ -3,31 +3,34 @@
 #include <map>
 #include "inputManager.h"
 
-enum class CameraAction {
+enum class Action {
 	MoveForward,
 	MoveBackward,
 	MoveLeft,
 	MoveRight,
 	MoveUp,
 	MoveDown,
-	RotateYaw,
-	RotatePitch
+	SetWindowClose,
+	LeftClick
 };
 
 class ActionManager {
 private:
-	std::map<CameraAction, int> cameraActionKeyMap;
+	std::map<Action, int> actionKeyMap;
 public:
 	ActionManager();
 	~ActionManager() {}
+
 	// Key actions
-	bool isActionPressed(CameraAction action);
-	bool isActionDown(CameraAction action);
+	bool isActionPressed(Action action);
+	bool isActionDown(Action action);
+
 	// Mouse actions
-	bool isMouseYaw();
-	bool isMousePitch();
+	bool isMousePressed(Action action);
+	bool isMouseDown(Action action);
 	float getMouseMoveYaw();
 	float getMouseMovePitch();
+	float getMouseScrollY();
 };
 
 
