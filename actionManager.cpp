@@ -22,3 +22,24 @@ bool ActionManager::isActionDown(CameraAction action)
 {
 	return InputManager::isKeyDown(cameraActionKeyMap[action]);
 }
+
+bool ActionManager::isMouseYaw()
+{
+	return InputManager::isMouseMovedYaw();
+}
+
+bool ActionManager::isMousePitch()
+{
+	return InputManager::isMouseMovedPitch();
+}
+
+float ActionManager::getMouseMoveYaw()
+{
+	return InputManager::getMouseDeltaX();
+}
+
+float ActionManager::getMouseMovePitch()
+{
+	return InputManager::getMouseDeltaY();
+}
+

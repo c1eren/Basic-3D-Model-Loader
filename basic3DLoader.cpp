@@ -54,7 +54,7 @@ InputManager inputManager(windowManager.m_window);
 // Handles modelManagers and takes data from middle layer
 Renderer renderer;
 
-Camera camera(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+Camera camera();
 
 int main()
 {

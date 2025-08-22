@@ -138,7 +138,6 @@
     <ClCompile Include="actionManager.cpp" />
     <ClCompile Include="basic3DLoader.cpp" />
     <ClCompile Include="camera.cpp" />
-    <ClCompile Include="constants.cpp" />
     <ClCompile Include="ebo.cpp" />
     <ClCompile Include="globalVariables.cpp" />
     <ClCompile Include="helperFunctions.cpp" />
@@ -180,7 +179,6 @@
   <ItemGroup>
     <ClInclude Include="actionManager.h" />
     <ClInclude Include="camera.h" />
-    <ClInclude Include="constants.h" />
     <ClInclude Include="ebo.h" />
     <ClInclude Include="globalVariables.h" />
     <ClInclude Include="helperFunctions.h" />

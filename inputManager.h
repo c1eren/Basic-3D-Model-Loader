@@ -12,14 +12,27 @@ public:
 	static bool isKeyPressed(int key);
 	static bool isKeyReleased(int key);
 
+	static double getMouseX();
+	static double getMouseY();
+	static float  getMouseDeltaX();
+	static float  getMouseDeltaY();
+	static bool   isMouseMovedYaw();
+	static bool	  isMouseMovedPitch();
 
 private:
 	GLFWwindow* s_window;
 	static std::unordered_map<int, bool> s_keys;
 	static std::unordered_map<int, bool> s_keysPressed;
 	static std::unordered_map<int, bool> s_keysReleased;
+	
+	static double lastX; 
+	static double lastY; 
+	//static double mouseX;
+	//static double mouseY;
+	static float  xOffset;
+	static float  yOffset;
+	static bool   firstMouse;
 
 	static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
-
-
+	static void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 };

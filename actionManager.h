@@ -10,10 +10,8 @@ enum class CameraAction {
 	MoveRight,
 	MoveUp,
 	MoveDown,
-	RotateLeft,
-	RotateRight,
-	RotateUp,
-	RotateDown
+	RotateYaw,
+	RotatePitch
 };
 
 class ActionManager {
@@ -22,8 +20,14 @@ private:
 public:
 	ActionManager();
 	~ActionManager() {}
+	// Key actions
 	bool isActionPressed(CameraAction action);
 	bool isActionDown(CameraAction action);
+	// Mouse actions
+	bool isMouseYaw();
+	bool isMousePitch();
+	float getMouseMoveYaw();
+	float getMouseMovePitch();
 };
 
 

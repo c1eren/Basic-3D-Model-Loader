@@ -1,7 +1,7 @@
 #pragma once
-
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include "globalVariables.h"
 
 enum class Direction : unsigned char {
 	FORWARD,
@@ -21,36 +21,47 @@ const float zoom = 45.0f;
 const float maxSpeed = 200.0f;
 const float accelRate = 10.0f;
 
-const glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f); // World up position (absolute, normalized)
+const glm::vec3 worldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+const glm::vec3 defaultPos(0.0f, 0.0f, 5.0f);
+const glm::vec3 defaultFront(0.0f, 0.0f, -1.0f);
+const glm::vec3 defaultXY(0.0f);
+
+const unsigned int centerScreenX = (viewport_width / 2);
+const unsigned int centerScreenY = (viewport_height / 2);
 
 class Camera {
-public:
-	float camYaw;
-	float camPitch;
-
-	float lastX = 400;
-	float lastY = 300;
-
-	bool firstMouse = 1;
+private:
+	glm::vec3 cameraPos = defaultPos;
+	glm::vec3 cameraFront = defaultFront;
+	glm::vec3 cameraX = defaultXY;
+	glm::vec3 cameraY = defaultXY;
 
 	float camZoom;
-	float camSensitivity;
-	float camSpeed;
-	float velocity = 0.0f;
+	float lastX = static_cast<float>(centerScreenX);
+	float lastY = static_cast<float>(centerScreenY);
+	float yaw = yaw;
+	float pitch = pitch;
 
-	glm::vec3 cameraPos;	// Camera world position
-	glm::vec3 cameraFront;	// CameraTarget (what's right in front of us)
-	glm::vec3 cameraX;	
-	glm::vec3 cameraY;
 
 	bool hasMoved = 1;
-	bool flashLightOn = 0;
 
+public:
+	Camera();
+	~Camera() {}
+	
+	// Update position vector
+	void moveForward(const float speed);
+	void moveBackward(const float speed);
+	void moveLeft(const float speed);
+	void moveRight(const float speed);
+	void moveUp(const float speed);
+	void moveDown(const float speed);
 
-	//glm::mat4 camView = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraY); // lookAt what's in front of us
+	// Update Euler values
+	void rotateYaw(const float speed);
+	void rotatePitch(const float speed); // Can look at storing speed in camera 
 
-
-	Camera(glm::vec3 camPosition = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 camFront = glm::vec3(0.0f, 0.0f, -1.0f));
+};
 
 	void updateEulerValues(float xoffset, float yoffset);
 

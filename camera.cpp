@@ -3,51 +3,61 @@
 
 #include "globalVariables.h"
 
-Camera::Camera(glm::vec3 camPosition, glm::vec3 camFront)
-    : cameraPos(camPosition), cameraFront(camFront), camYaw(yaw), camPitch(pitch), camZoom(zoom), camSensitivity(sensitivity), camSpeed(0.0f)
+Camera::Camera()
 {
     updateCameraFrontVectors();
 }
 
-void Camera::processKeyPress(Direction dir)
+void Camera::moveForward(const float speed)
 {
+    cameraPos += cameraFront * speed;
     hasMoved = 1;
+}
 
-    //if (camSpeed < maxSpeed)
-    //{
-    //    camSpeed += accelRate;
-    //}
-    //else if (camSpeed > maxSpeed)
-    //{
-    //    camSpeed = maxSpeed;
-    //}
+void Camera::moveBackward(const float speed)
+{
+    cameraPos -= cameraFront * speed;
+    hasMoved = 1;
+}
 
-    velocity = maxSpeed * deltaTime;
+void Camera::moveLeft(const float speed)
+{
+    cameraPos -= cameraX * speed;
+    hasMoved = 1;
+}
 
-    if (dir == Direction::FORWARD)
-    {
-        cameraPos += cameraFront * velocity;
-    }
-    if (dir == Direction::BACKWARD)
-    {
-        cameraPos -= cameraFront * velocity;
-    }
-    if (dir == Direction::LEFT)
-    {
-        cameraPos -= cameraX * velocity;
-    }
-    if (dir == Direction::RIGHT)
-    {
-        cameraPos += cameraX * velocity;
-    }
-    if (dir == Direction::UP)
-    {
-        cameraPos += worldUp * velocity;
-    }
-    if (dir == Direction::DOWN)
-    {
-        cameraPos -= worldUp * velocity;
-    }    
+void Camera::moveRight(const float speed)
+{
+    cameraPos += cameraX * speed;
+    hasMoved = 1;
+}
+
+void Camera::moveUp(const float speed)
+{
+    cameraPos += worldUp * speed;
+    hasMoved = 1;
+}
+
+void Camera::moveDown(const float speed)
+{
+    cameraPos -= worldUp * speed;
+    hasMoved = 1;
+}
+
+void Camera::rotateYaw(const float sensitivity)
+{
+    yaw += xOffset * sensitivity;
+}
+
+void Camera::rotatePitch(const float sensitivity)
+{
+    pitch += yOffset * sensitivity;
+
+    // Pitch constraints
+    if (pitch > 89.0f)
+        pitch = 89.0f;
+    if (pitch < -89.0f)
+        pitch = -89.0f;
 }
 
 
@@ -56,13 +66,9 @@ void Camera::processMouseScroll(float yoffset)
     camZoom -= yoffset / camSensitivity;
 
     if (camZoom < 1.0f)
-    {
         camZoom = 1.0f;
-    }
     if (camZoom > 90.0f)
-    {
         camZoom = 90.0f;
-    }
 }
 
 void Camera::updateEulerValues(float xoffset, float yoffset)
@@ -71,18 +77,14 @@ void Camera::updateEulerValues(float xoffset, float yoffset)
     xoffset *= sensitivity;
     yoffset *= sensitivity;
 
-    camYaw += xoffset;
-    camPitch += yoffset;
+    yaw += xoffset;
+    pitch += yoffset;
 
     // Pitch constraints
-    if (camPitch > 89.0f)
-    {
-        camPitch = 89.0f;
-    }
-    if (camPitch < -89.0f)
-    {
-        camPitch = -89.0f;
-    }
+    if (pitch > 89.0f)   
+        pitch = 89.0f;
+    if (pitch < -89.0f)
+        pitch = -89.0f;
 
     updateCameraFrontVectors();
 }

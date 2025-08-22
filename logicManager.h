@@ -17,6 +17,6 @@ private:
 	ActionManager* actionManager = nullptr;
 
 private:
-	void updateModelLogic(float *deltaTime);
-	void updateCameraLogic(float *deltaTime);
+	void updateModelLogic(float deltaTime);
+	void updateCameraLogic(float deltaTime);
 };
