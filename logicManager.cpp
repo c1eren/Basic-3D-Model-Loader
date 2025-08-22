@@ -15,12 +15,16 @@ void LogicManager::setActiveModel(ModelManager* activeModel)
 void LogicManager::updateLogic(float deltaTime)
 {
     updateApplicationLogic();
+	updateCameraLogic(deltaTime);
+
     if (activeModel)
     {
         getModelState();
         updateModelLogic(deltaTime);
+        activeModel->getIsSelected();
+        if (!actionManager->isMouseDown(Action::LeftClick) && !isGrabbing)
+            activeModel = nullptr;
     }
-	updateCameraLogic(deltaTime);
 }
 
 void LogicManager::updateApplicationLogic()
@@ -75,6 +79,7 @@ void LogicManager::updateModelLogic(float deltaTime)
     float scale        = activeModel->getScale();
     float radius       = activeModel->getRadius();
 
+    //TODO: Have a look at this grabbing code 
     if (activeModel->getIsGrabbed())
     {
         glm::vec3 cameraPos   = camera->getCameraPos();
@@ -87,9 +92,6 @@ void LogicManager::updateModelLogic(float deltaTime)
 
     if (activeModel->getIsManipulating())
     {
-        //if (!getTranslationOn())
-        //    position = camera.cameraPos + camera.cameraFront;
-
         if (activeModel->getRotationOn())
         {
             float mouseYaw = actionManager->getMouseMoveYaw();
@@ -97,28 +99,26 @@ void LogicManager::updateModelLogic(float deltaTime)
         }
 
         // Rotation OR translation, but not both simulteneously
-        if (activeModel->getTranslationOn() && !activeModel->getIsGrabbed())
+        if (activeModel->getTranslationOn())
         {
-            //grabPress = 0;
             // Important to scale unit vectors AFTER they've been used for cross calculations
             glm::vec3 rightVector = camera->getCameraX();
             glm::vec3 upVector    = camera->getCameraY();
 
             // TODO: Scale velocities by distance
             float factor = glm::clamp((glm::length(position - camera->getCameraPos()) / 100), 0.01f, 2.0f);
-            rightVector *= (xVelocity * factor);
-            upVector    *= (yVelocity * factor);
+            rightVector *= (actionManager->getMouseMoveYaw() * factor);
+            upVector    *= (actionManager->getMouseMovePitch() * factor);
             position    += (rightVector + upVector);
         }
 
         if (activeModel->getScaleOn())
         {
             float yScroll = actionManager->getMouseScrollY();
-            if (scale < 1)
-                scale += yScroll * scale;
-            else
-                scale += yScroll;
-            radius *= (scale /20);
+            scale += yScroll * 0.1f;
+            scale = glm::clamp(scale, 0.1f, 10.0f);
+
+            radius = activeModel->getBaseRadius() * scale;
         }
     }
 

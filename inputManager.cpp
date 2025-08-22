@@ -32,6 +32,7 @@ void InputManager::update()
 	s_mouseReleased.clear();
 	xOffset = 0.0f;
 	yOffset = 0.0f;
+	yScroll = 0.0f;
 }
 
 bool InputManager::isKeyDown(int key)

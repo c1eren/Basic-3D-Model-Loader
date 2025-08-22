@@ -21,7 +21,7 @@ public:
 		: model(a_model), shader(a_shader) {
 		m_center = model.center;
 		m_radius = model.radius;
-		m_newRadius = model.radius;
+		m_baseRadius = model.radius;
 	}
 	~ModelManager() {}
 
@@ -41,10 +41,10 @@ public:
 	void setScaleOn(bool sO) { m_scaleOn = sO; }
 
 	float getRadius() const { return m_radius; }
-	void setRadius(float mR) { m_radius = mR; m_newRadius = mR; }
+	void setRadius(float mR) { m_radius = mR; }
 
-	float getNewRadius() const { return m_newRadius; }
-	void setNewRadius(float nR) { m_newRadius = nR; }
+	float getBaseRadius() const { return m_baseRadius; }
+	void setBaseRadius(float nR) { m_baseRadius = nR; }
 
 	bool getIsSelected() const { return m_isSelected; }
 	void setIsSelected(bool iS) { m_isSelected = iS; }
@@ -109,7 +109,7 @@ private:
 	bool m_isGrabbed	  = 0;
 
 	float m_radius = 0.0f;
-	float m_newRadius = 0.0f;
+	float m_baseRadius = 0.0f;
 
 	glm::vec3 m_center = glm::vec3(0.0f);
 

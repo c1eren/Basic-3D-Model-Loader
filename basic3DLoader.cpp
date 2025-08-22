@@ -223,7 +223,7 @@ int main()
                 manager.setIsSelected(0);
                 float tHit = 0.0f;
 
-                if (intersectRaySphere(rayOrigin, rayDir, manager.getPosition(), manager.getNewRadius(), tHit))
+                if (intersectRaySphere(rayOrigin, rayDir, manager.getPosition(), manager.getRadius(), tHit))
                 {
                     if (tHit < lastHit)
                     {
@@ -295,14 +295,6 @@ int main()
         //std::cout << "End loop" << std::endl;
         //std::cout << "Shader binds per loop: " << Shader::s_shaderBindsPerLoop << std::endl;
         Shader::s_shaderBindsPerLoop = 0;
-
-        if (mouseLeft)
-            isHolding = 1;
-        else
-            isHolding = 0;
-
-        isSelection = 0;
-
     }
     /*#####################################################################################################################################################*/
         // RENDER LOOP

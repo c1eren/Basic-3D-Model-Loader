@@ -9,7 +9,7 @@ ActionManager::ActionManager()
 		{Action::MoveRight,		 GLFW_KEY_D},
 		{Action::MoveUp,		 GLFW_KEY_SPACE},
 		{Action::MoveDown,		 GLFW_KEY_LEFT_SHIFT},
-		{Action::SetWindowClose, GLFW_KEY_ESCAPE },
+		{Action::SetWindowClose, GLFW_KEY_ESCAPE},
 		{Action::LeftClick,		 GLFW_MOUSE_BUTTON_LEFT},
 		{Action::Grab,			 GLFW_KEY_E}
 	};
