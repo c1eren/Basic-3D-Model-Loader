@@ -1,5 +1,5 @@
 #version 460 core
-#define NR_POINT_LIGHTS 3
+#define NR_POINT_LIGHTS 7
 out vec4 FragColor;
 
 // In from Vertex
@@ -58,14 +58,47 @@ uniform sampler2D u_texture_normal;
 // Outline
 uniform int u_outline;
 
-vec3 calcPointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 diffTex, vec3 specTex, float shininess);
+// IsMaterial
+uniform int u_isMaterial;
+
 vec3 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, vec3 diffTex, vec3 specTex, float shininess);
+vec3 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, MaterialColors matCols, float shininess);
+vec3 calcPointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir, vec3 diffTex, vec3 specTex, float shininess);
+vec3 calcPointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir, MaterialColors matCols, float shininess);
+vec3 calcTex(vec3 norm, vec3 viewDir); // u_isMaterial = 0
+vec3 calcMat(vec3 norm, vec3 viewDir); // u_isMaterial = 1
 
 void main()
 {
 	vec3 norm = normalize(from_vs.Normal);
 	vec3 viewDir = normalize(u_cameraViewPos - from_vs.FragPos);
+	vec3 final;
 
+	if (u_isMaterial == 0)
+	{
+		final = calcTex(norm, viewDir);
+	}
+	else
+	{
+		final = calcMat(norm, viewDir);
+	}
+
+	if (u_outline == 1)
+	{
+		final += vec3(0.1, 0.1, 0.1);
+	}
+
+	FragColor = vec4(final, 1.0);
+
+	// TODO partial transparency support
+	if (FragColor.a < 1.0)
+	{
+		discard;
+	}
+}
+
+vec3 calcTex(vec3 norm, vec3 viewDir)
+{
 	vec3 diffTex = vec3(texture(u_texture_diffuse, from_vs.TexCoords));
 	vec3 specTex = vec3(texture(u_texture_specular, from_vs.TexCoords));
 	vec3 normTex = vec3(texture(u_texture_normal, from_vs.TexCoords));
@@ -79,19 +112,21 @@ void main()
 		final += calcPointLight(u_lightSource[i], norm, from_vs.FragPos, viewDir, diffTex, specTex, u_matProps.shininess);
 	}
 
-	if (u_outline == 1)
+	return final;
+}
+
+vec3 calcMat(vec3 norm, vec3 viewDir)
+{
+	vec3 final = vec3(0.0); // Check transparency if shader fails
+
+	final += calcDirectionalLight(dirLight, norm, viewDir, u_matCols, u_matProps.shininess);
+
+	for (int i = 0; i < NR_POINT_LIGHTS; i++)
 	{
-		final += vec3(0.1, 0.1, 0.1);
+		final += calcPointLight(u_lightSource[i], norm, from_vs.FragPos, viewDir, u_matCols, u_matProps.shininess);
 	}
 
-	FragColor = vec4(final, 1.0);
-
-
-	// TODO partial transparency support
-	if (FragColor.a < 1.0)
-	{
-		discard;
-	}
+	return final;
 }
 
 vec3 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, vec3 diffTex, vec3 specTex, float shininess)
@@ -110,6 +145,26 @@ vec3 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, vec
 	vec3 ambient = light.ambient * diffTex;
 	vec3 diffuse = light.diffuse * diff * diffTex;
 	vec3 specular = light.specular * spec * specTex;
+
+	return (ambient + diffuse + specular);
+}
+
+vec3 calcDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, MaterialColors matCols, float shininess)
+{
+	// Light direction vector
+	vec3 lightDir = normalize(-light.direction);
+
+	// Diffuse shading
+	float diff = max(dot(normal, lightDir), 0.0);
+
+	// Specular shading
+	vec3 reflectDir = reflect(-lightDir, normal);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+
+	// Results
+	vec3 ambient = light.ambient * matCols.ambient;
+	vec3 diffuse = light.diffuse * diff * matCols.diffuse;
+	vec3 specular = light.specular * spec * matCols.specular;
 
 	return (ambient + diffuse + specular);
 }
@@ -134,6 +189,34 @@ vec3 calcPointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir, 
 	vec3 ambient = light.ambient * diffTex;
 	vec3 diffuse = light.diffuse * diff * diffTex;
 	vec3 specular = light.specular * spec * specTex;
+
+	ambient *= attenuation;
+	diffuse *= attenuation;
+	specular *= attenuation;
+
+	return (ambient + diffuse + specular);
+}
+
+vec3 calcPointLight(LightSource light, vec3 normal, vec3 fragPos, vec3 viewDir, MaterialColors matCols, float shininess)
+{
+	// Light direction vector 
+	vec3 lightDir = normalize(light.position - fragPos);
+
+	// Diffuse shading 
+	float diff = max(dot(normal, lightDir), 0.0);
+
+	// Specular shading
+	vec3 reflectDir = reflect(-lightDir, normal);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+
+	// Attenuation
+	float distance = length(light.position - fragPos);
+	float attenuation = 1.0 / (light.attenuation.x + light.attenuation.y * distance + light.attenuation.z * (distance * distance));
+
+	// Results
+	vec3 ambient = light.ambient * matCols.ambient;
+	vec3 diffuse = light.diffuse * diff * matCols.diffuse;
+	vec3 specular = light.specular * spec * matCols.specular;
 
 	ambient *= attenuation;
 	diffuse *= attenuation;

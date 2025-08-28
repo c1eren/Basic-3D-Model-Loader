@@ -1,7 +1,7 @@
 // ConsoleApplication2.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 #define STB_IMAGE_IMPLEMENTATION
-#define NR_POINT_LIGHTS 3
+#define NR_POINT_LIGHTS 7
 
 #include <iostream>
 #include <vector>
@@ -69,8 +69,10 @@ int main()
 
     // Model
     Model model1("models/planet/planet.obj");
-    Model model2("models/abandonedHouse/cottage_obj.obj");
-    Model model3("models/backpack/backpack.obj", 0);
+    //Model model2("models/abandonedHouse/cottage_obj.obj");
+    //Model model3("models/backpack/backpack.obj", 0);
+    //Model model4("models/fish/fish.obj");
+    Model model4("models/low_poly_tree/Lowpoly_tree_sample.obj");
 
     //Model model1("models/Tree1/Tree1.obj");
     //Model model1("models/53-cottage_fbx/cottage_fbx.fbx");
@@ -82,16 +84,18 @@ int main()
     //renderer.createRenderTarget(model3, modelShader);
 
     ModelManager planet(model1, modelShader);
-    ModelManager house(model2, modelShader);
-    ModelManager backpack(model3, modelShader);
+    //ModelManager house(model2, modelShader);
+    //ModelManager backpack(model3, modelShader);
+    ModelManager fish(model4, modelShader);
 
-    house.setModelMatrix(glm::scale(glm::translate(house.getModelMatrix(), glm::vec3(10.0f)), glm::vec3(0.10f)));
+    //house.setModelMatrix(glm::scale(glm::translate(house.getModelMatrix(), glm::vec3(10.0f)), glm::vec3(0.10f)));
     //printVec3("House position", house.getPosition());
     //printVec3("Planet position", planet.getPosition());
 
     renderer.r_renderList.push_back(planet);
-    renderer.r_renderList.push_back(backpack);
-    renderer.r_renderList.push_back(house);
+    //renderer.r_renderList.push_back(backpack);
+    //renderer.r_renderList.push_back(house);
+    renderer.r_renderList.push_back(fish);
 
     printMat4("Planet matrix", planet.getModelMatrix());
 
@@ -150,9 +154,11 @@ int main()
     };
 
     // Point lights
-    glm::vec3 pLAttenuation(1.0f, 0.14f, 0.07f);
+    //glm::vec3 pLAttenuation(1.0f, 0.14f, 0.07f);
+    glm::vec3 pLAttenuation(1.0f, 0.09f, 0.032f); // Classic values
+    //glm::vec3 pLAttenuation(1.0f, 0.0f, 0.0f);    // No fall-off
     glm::vec3 pLAmbient(0.2f);
-    glm::vec3 pLDiffuse(0.0f, 0.5f, 0.5f);
+    glm::vec3 pLDiffuse(1.0f);
     glm::vec3 pLSpecular(1.0f);
 
     // TODO make point light container with dynamic creation and static count tracker
@@ -247,11 +253,16 @@ int main()
 
         for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
         {
-            pLPosition[i] = glm::vec3(sin(currentFrame));
             glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, pLPosition[i]);
+            model = glm::translate(model, (pLPosition[i] * 4.0f));
             lightShader.setMat4("model", model);
             sphere.draw(lightShader);
+
+            std::string strA = "u_lightSource[";
+            std::string strB = "].position";
+            std::string num = std::to_string(i);
+            std::string pLPos = strA + num + strB;
+            modelShader.setVec3(pLPos.c_str(), pLPosition[i]);
             //std::cout << "Sphere draw" << std::endl;
         }
         // Save all shader variables and send them at the end in batches 
@@ -275,6 +286,12 @@ int main()
             //glDepthMask(GL_TRUE);
             //glDepthFunc(GL_LESS);
         }
+
+        glm::mat4 model(1.0f);
+        model = glm::rotate(model, glm::radians((float)glfwGetTime() * deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
+
+        fish.setModelMatrix(model);
+        fish.setHasMoved(1);
 
         for (unsigned int i = 0; i < NR_POINT_LIGHTS; i++)
         {

@@ -36,6 +36,8 @@ struct TrackIndices {
 
 class Mesh {
 private:
+	bool isMaterial = 0;
+
 	std::vector<Vertex>		  vertices;
 	std::vector<unsigned int> indices;
 
@@ -44,8 +46,8 @@ private:
 	MaterialProperties		  mProperties;
 	
 public:
-	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, TextureIds ids, MaterialProperties mProps, MaterialColors mCols)
-		: vertices(vertices), indices(indices), texIds(ids), mProperties(mProps), mColors(mCols) {}
+	Mesh(std::vector<Vertex> vertices, std::vector<unsigned int> indices, TextureIds ids, MaterialProperties mProps, MaterialColors mCols, bool isMat)
+		: vertices(vertices), indices(indices), texIds(ids), mProperties(mProps), mColors(mCols), isMaterial(isMat) {}
 	~Mesh() {}
 
 	TextureIds texIds;
@@ -59,6 +61,7 @@ public:
 	std::vector<unsigned int> getIndices() { return indices; };
 	TextureIds getTexIds() { return texIds; };
 
+	bool getIsMaterial() { return isMaterial; }
 	unsigned int getIndicesStart() { return tIndices.indicesStart; };
 	unsigned int getIndicesCount() { return tIndices.indicesCount; };
 	unsigned int getBaseVertex() { return tIndices.baseVertex; };

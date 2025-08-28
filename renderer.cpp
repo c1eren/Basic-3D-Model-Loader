@@ -126,14 +126,23 @@ void Renderer::drawNoStencil()
         {
             Mesh& mesh = it.model.getMeshes()[j];
 
-            checkTextureBindings(mesh);
-            checkMaterialProperties(mesh, it, it.shader);
-            checkMaterialColors(mesh, it, it.shader);
+            if (mesh.getIsMaterial())
+            {
+                checkMaterialProperties(mesh, it, it.shader);
+                checkMaterialColors(mesh, it, it.shader);
+                it.shader.setInt("u_isMaterial", 1);
+            }
+            else
+            {
+                checkTextureBindings(mesh);
+                it.shader.setInt("u_isMaterial", 0);
+            }
 
             unsigned int indicesCount = mesh.getIndicesCount();
             unsigned int indicesStart = mesh.getIndicesStart();
             unsigned int inBaseVertex = mesh.getBaseVertex();
 
+            it.shader.use();
             it.shader.setMat4("model", it.getModelMatrix()); // Fix so we don't have to do this every loop
 
             glBindVertexArray(it.model.getVAO());

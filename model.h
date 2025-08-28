@@ -44,6 +44,7 @@ private:
 	unsigned int indicesCount = 0;
 
 	bool flipUVs = 0;
+
 	std::string directory;
 
 private:

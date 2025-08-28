@@ -21,7 +21,6 @@ void LogicManager::updateLogic(float deltaTime)
     {
         getModelState();
         updateModelLogic(deltaTime);
-        activeModel->getIsSelected();
         if (!actionManager->isMouseDown(Action::LeftClick) && !isGrabbing)
             activeModel = nullptr;
     }
@@ -84,7 +83,8 @@ void LogicManager::updateModelLogic(float deltaTime)
     {
         glm::vec3 cameraPos   = camera->getCameraPos();
         glm::vec3 cameraFront = camera->getCameraFront();
-        float grabDistance    = activeModel->getRadius() * 1.2f;
+        float grabDistance    = glm::clamp(activeModel->getRadius() * 1.2f, 1.2f , 40.0f);
+        
 
         //Factor grab distance by radius of model so it remains out of near plane
         position = cameraPos + cameraFront * grabDistance;

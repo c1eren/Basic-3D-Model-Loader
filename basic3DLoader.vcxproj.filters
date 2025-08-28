@@ -147,4 +147,7 @@
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <Object Include="..\..\..\..\Users\ciere\Downloads\85-cottage_obj\cottage_obj.obj" />
+  </ItemGroup>
 </Project>

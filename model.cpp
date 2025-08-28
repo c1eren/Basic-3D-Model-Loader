@@ -194,7 +194,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		texIds.ti_normal   = texturesLoaded[0].id;
 	}
 
-	Mesh rMesh{ vertices, indices, texIds, tempProp, tempCols };
+	Mesh rMesh{ vertices, indices, texIds, tempProp, tempCols, (texIds.ti_diffuse == texturesLoaded[0].id) };
 	return rMesh;
 }
 
